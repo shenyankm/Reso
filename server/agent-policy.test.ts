@@ -127,3 +127,17 @@ test('asking to understand a method is distinct from a brief phrase request and 
   const phrase=decideRoute(turn({intent:'advice',readiness:'listening',method_candidate:'nvc',understanding_confirmed:true}),initial(),'private','12')
   assert.equal(phrase.decision.skill,'practical_advice');assert.equal(phrase.decision.may_offer_method,null)
 })
+
+test('an explicit method preview needs no confirmation of a model hypothesis, while other gates still apply',()=>{
+  const preview=turn({intent:'method_offer',method_candidate:'narrative',understanding_confirmed:false,confirmation_evidence_id:null})
+  for(const event_clarity of ['clear','partial'] as const){
+    const offered=decideRoute({...preview,event_clarity},initial(),'private','10')
+    assert.equal(offered.decision.skill,'method_offer');assert.equal(offered.decision.may_offer_method,'narrative')
+    assert.equal(offered.decision.may_prepare_record,false);assert.equal(offered.state.readiness,'exploring')
+    assert.equal(offered.state.last_offered_method,null)
+  }
+  for(const blocked of [turn({method_candidate:'narrative'}),{...preview,event_clarity:'unknown' as const},{...preview,confidence:0.2},{...preview,emotion_intensity:'high' as const},{...preview,risk:'uncertain' as const},{...preview,refusal_target:'method' as const}]){
+    assert.equal(decideRoute(blocked,initial(),'private','10').decision.may_offer_method,null)
+  }
+  assert.equal(decideRoute(preview,initialSessionState('room:event-1'),'room','10').decision.may_offer_method,null)
+})

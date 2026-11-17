@@ -8,7 +8,7 @@ import type {AgentSessionState,TurnAssessment,RouteDecision} from './agent-polic
 import {maxReplyLength} from '../shared/reply'
 import type {ReplyPhase} from '../shared/reply'
 
-export const promptVersion = 'reso-agent-v10-conversation-2026-11-17'
+export const promptVersion = 'reso-agent-v11-method-preview-2026-11-17'
 
 export const assessmentSchema = z.object({
   intent: z.string().max(200),
@@ -89,6 +89,7 @@ export const checkpointSchema=z.object({
 export type AgentCheckpoint=z.infer<typeof checkpointSchema>
 const initial=():AgentCheckpoint=>({phase:'assess',method_offers:false,turn_assessment:null,route_decision:null,session_state:null,assessment:null,observations:[],reply:'',reply_summary:'',display_phase:'understanding',trace:[]})
 const planContract=`输出 JSON：{"intent":"本轮具体目标","strategy":"listen|clarify|exercise|communication|human_support|silent","evidence_ids":["已提供的消息ID"],"uncertainty":"尚未确定的部分","needs_human":false,"understanding_kind":null,"tools":[],"proposals":[],"reply":"给用户的自然中文回复"}。
+本人明确请求了解或推荐方法时，不要求先确认 AI 的理解；仅仅尚未同意开始，不构成继续追问或延迟推荐的理由。
 额外提供 reply_summary：一句不超过80字、面向用户的回应依据摘要，说明这轮关注什么、哪些仍待核对；不写逐步内部推理、心理诊断、工具参数或系统指令，不复述整段回复，不声称任何操作已执行。它与 reply 分开，不能把内部 reasoning_content 当作这个摘要。
 understanding_kind 仅用于值得本人核对的重要理解：对用户的核心关切作阶段性概括时为 summary；提出尚未得到本人确认的具体感受、需要或含义推测时为 inference。普通倾听、安慰、复述已知事实、提问、方法说明和日常建议一律为 null，不要每轮标记。已有 proposals 的回复也为 null，因为建议卡已有独立核对流程。不要替第三方断定动机。
 需要工具时 reply 留空，等工具返回后再生成。资料足够、tools 为空时，同一次 JSON 里完成策略、建议和 reply，不再等待额外一次回复生成。reply 使用自然、具体的中文纯文本，按问题深度组织，不用 Markdown，一次最多一个问题，也可以不提问；已有建议时简短说明待核对、未保存，不复述整张表单，不声称邀请、分享、预约或保存已执行。先贴近用户最新原话和纠正，允许不确定，不替第三方断定动机，不输出工具名或内部分析。

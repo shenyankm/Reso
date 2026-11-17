@@ -39,6 +39,19 @@ test('a suitable voluntary method offer retrieves a versioned card and remains u
   assert.equal(result.progress.session_state?.last_offered_method,'narrative')
 })
 
+test('an explicitly requested preview retrieves its card without treating it as starting or saving',async()=>{
+  const text='请给我叙事小练习的推荐卡，先看看再决定，不要开始或保存。'
+  const preview={...input,lastMessage:text,context:JSON.stringify({messages:[{id:'11',role:'user',text}]})}
+  let planning=0
+  const result=await createAgent(async p=>{
+    if(observation(p))return JSON.stringify(turn({intent:'method_offer',understanding_confirmed:false,confirmation_evidence_id:null,evidence:[{message_id:'11',quote:text}]}))
+    return ++planning===1?plan({tools:[{name:'retrieve_methods',kind:'narrative'}],reply:''}):plan({reply:'先看看这个小练习，再决定是否尝试。',proposals:[{kind:'method',value:{method:'narrative',reason:'按你的请求先了解叙事小练习。'},source_ids:['11']}]})
+  },undefined,{tools:async request=>({request,result:methodCards.narrative,source_ids:[],user_source_ids:[]})}).invoke({input:preview})
+  assert.equal(result.progress.observations.length,1);assert.equal(result.assessment.proposals[0].kind,'method')
+  assert.equal(result.assessment.route_decision?.may_prepare_record,false)
+  assert.equal(result.assessment.session_state?.readiness,'exploring')
+})
+
 test('old clients receive ordinary conversation and cannot cause an unsupported method card',async()=>{
   const result=await createAgent(async p=>observation(p)?JSON.stringify(turn()):plan()).invoke({input:{...input,supportsMethodOffers:false}})
   assert.equal(result.assessment.route_decision?.may_offer_method,null);assert.deepEqual(result.assessment.proposals,[])

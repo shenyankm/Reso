@@ -75,7 +75,7 @@ export const skillInstructions:Record<RouteDecision['skill'],string>={
   event_clarification:'区分对方原话、发生经过与本人的解释，先用已经提供的事实；缺少关键事实才核对，不替任何一方判对错。',
   meaning_exploration:'探索事件、当时的解释、感受与自我评价怎样联系，可参考 CBT 的事实/解释区分。一次核对一个假设，不把解释当事实，不贴认知或疾病标签，不替家长辩护。',
   practical_advice:'直接给一个贴合当前事实的说法或小建议，保留用户选择；完成用户要求的一句说法或建议就停，不附加用法、评价或新的选择，不升级成表单、练习或邀请。',
-  method_offer:'结合已核对的具体事件，简要说明方法可能适合什么；检索对应方法卡，只作可选择的推荐，用户可以继续聊，不说已经开始或会有确定疗效。',
+  method_offer:'结合本人已提供的具体事件或请求，简要说明方法可能适合什么；检索对应方法卡，只作可选择的推荐，用户可以继续聊，不说已经开始或会有确定疗效。',
   guided_practice:'先查对应方法步骤和禁忌，再按本人意愿引导一个小步骤；允许留空、暂停和退出，不强迫积极或和解，保存和分享仍分别确认。',
   communication_planning:'先核对想与谁沟通、希望表达什么及具体共享范围。对方动机仍待本人确认；未明确授权不能生成已发出的邀请或共享事实。',
   professional_support:'按实际资源、适配及真实状态说明支持选择；没有已核验人员就如实说明，不虚构资质、接收、预约或治疗效果。',
@@ -97,7 +97,7 @@ export function decideRoute(turn:TurnAssessment,previous:AgentSessionState,domai
     const declined=target==='method'?(turn.method_candidate||previous.last_offered_method):null
     if(declined&&!state.declined_methods.includes(declined))state.declined_methods.push(declined)
   }
-  const enoughForOffer=turn.intent==='method_offer'&&turn.understanding_confirmed&&turn.event_clarity==='partial'
+  const enoughForOffer=turn.intent==='method_offer'&&turn.event_clarity==='partial'
   const decision:RouteDecision={schema_version:1,policy_version:agentPolicyVersion,route:'A',stage:'listening',skill:'emotion_support',reason:'先回应当前感受，不把倾诉变成任务。',allowed_tools:['search_history','read_understandings'],may_offer_method:null,may_prepare_record:false,requires_confirmation:false,gates:[]}
   const gate=(gate:RouteDecision['gates'][number]['gate'],result:'pass'|'block'|'review',reason:string)=>decision.gates.push({gate,result,reason})
   const choose=(route:RouteDecision['route'],stage:RouteDecision['stage'],skill:RouteDecision['skill'],reason:string)=>Object.assign(decision,{route,stage,skill,reason})
@@ -142,7 +142,7 @@ export function decideRoute(turn:TurnAssessment,previous:AgentSessionState,domai
         decision.allowed_tools.push('practice_guide','retrieve_methods','read_practice');decision.may_prepare_record=true;decision.requires_confirmation=true
       }else{
         choose('C',turn.third_party_motive_uncertain?'perspectives':'meaning','meaning_exploration','以待核对的可能解释帮助探索，不替第三方断定动机。')
-        if(turn.method_candidate&&!declined&&(turn.readiness==='exploring'||turn.intent==='method_offer'&&turn.readiness==='willing')&&turn.understanding_confirmed&&domain==='private'){
+        if(turn.method_candidate&&!declined&&(turn.readiness==='exploring'||turn.intent==='method_offer'&&turn.readiness==='willing')&&(turn.understanding_confirmed||turn.intent==='method_offer')&&domain==='private'){
           decision.skill='method_offer';decision.may_offer_method=turn.method_candidate;decision.allowed_tools.push('retrieve_methods');decision.requires_confirmation=true
         }
         if(declined)gate('method','block','此前已拒绝，须本人主动改变意愿才重新开放')
