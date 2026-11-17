@@ -273,7 +273,7 @@ ALTER TABLE public."agent_runs" ADD CONSTRAINT "fk_run_conversation" FOREIGN KEY
 ALTER TABLE public."agent_runs" ADD CONSTRAINT "fk_run_trigger_message" FOREIGN KEY ("conversation_id", "trigger_message_id") REFERENCES public."messages" ("conversation_id", "id") ON DELETE RESTRICT;
 ALTER TABLE public."agent_runs" ADD CONSTRAINT "fk_run_response_message" FOREIGN KEY ("conversation_id", "response_message_id") REFERENCES public."messages" ("conversation_id", "id") ON DELETE RESTRICT;
 
-ALTER TABLE public.agent_runs ADD CONSTRAINT ck_run_json CHECK (jsonb_typeof(consent_epochs) = 'object' AND (input_manifest IS NULL OR jsonb_typeof(input_manifest) = 'object'));
+ALTER TABLE public."agent_runs" ADD CONSTRAINT "ck_agent_runs_containers" CHECK (jsonb_typeof("consent_epochs") = 'object' AND ("input_manifest" IS NULL OR jsonb_typeof("input_manifest") = 'object'));
 ALTER TABLE public.agent_runs ADD CONSTRAINT ck_run_attempt CHECK (attempt_no IS NULL OR attempt_no > 0);
 ALTER TABLE public.agent_runs ADD CONSTRAINT ck_run_logical_pair CHECK ((logical_turn_id IS NULL) = (attempt_no IS NULL));
 ALTER TABLE public.agent_runs ADD CONSTRAINT ck_run_versions CHECK ((state_revision IS NULL OR state_revision >= 0) AND (permission_epoch IS NULL OR permission_epoch >= 0));

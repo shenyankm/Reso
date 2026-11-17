@@ -8,7 +8,7 @@ React＋TypeScript 共享移动端界面及 Tauri 2 Android 本机调试包，�
 
 Web 构建包需要配合 API/Worker/PostgreSQL 使用，不能只打开 index.html 便获得完整服务。Android 调试包连接现有 HTTPS 服务；本次源码发布没有部署该服务，线上页面/数据库版本不保证与 tag 同步，也不是商店签名安装包。
 
-数据库运行基线仍为 `0001–0007`。完整 V2.3 表设计、SQL 草案及 [M1a/M1 实施与回填方案](docs/database-m1-implementation-plan.md)已纳入源码，**尚未执行目标数据库迁移、回填或原生读写切换**。公开发布未包含 `.env`、业务库、用户聊天/附件或本地备份；资料范围见 [来源说明](docs/source-materials.md)。
+数据库默认运行基线仍为 `0001–0007`。V2.3 设计的 M1a/M1 已拆成显式选择的增量文件，并在一次性 PostgreSQL 集群验证迁移、合成旧数据回填、备份恢复与受限只读权限；见 [M1a/M1 方案](docs/database-m1-implementation-plan.md)与[隔离验收](docs/database-m1-isolated-acceptance.md)。**现有业务库及线上服务未迁移，原生 API/Worker 未切流。** 公开发布未包含 `.env`、业务库、用户聊天/附件或本地备份；资料范围见 [来源说明](docs/source-materials.md)。
 
 ## 服务器版
 
@@ -113,9 +113,12 @@ npm run counselor -- registered-test-email@example.com
 npm test
 npm run test:integration
 npm run build
+npm run test:m1:isolated
 ```
 
 集成测试在同一 PostgreSQL 实例创建随机命名的隔离数据库，验证多账号权限、分享范围、Agent 上下文、队列事务与连接中断恢复，结束后删除对应测试库。故障注入只针对隔离库。
+
+`test:m1:isolated` 另起 PostgreSQL 17 临时容器，使用 tmpfs、随机本机端口和随机身份；需要 Docker、uv 及 Node.js。它不加载 `.env`、不接受任意目标 URL、不启动现有数据库容器。验证后只清理本轮临时库、角色和容器，私有报告和加密的合成数据备份留在 `.data/m1-verification/`。`db:migrate` 仍只安装 `0001–0007`；不要手工把累计草案依次执行。
 
 测试建库使用迁移连接，业务请求及回复处理使用独立受限账号。测试会清理本次创建的库和角色，不修改正式账号。`npm run dev` 的 API/Worker 启动器会剔除迁移连接和管理员密码；生产部署应只向运行容器提供运行凭据，不挂载含管理员凭据的开发 `.env`。pg-boss 在运行时保留任务监督和重试，关闭自动迁移、建队列、统计分区创建和自动重建索引；队列初始化由迁移命令完成。
 
@@ -129,7 +132,7 @@ Redis 为按需启用项，本版以 PostgreSQL LISTEN/NOTIFY 和 15 秒对账�
 
 ## 工程稳定性
 
-当前运行迁移为 `0001–0007`，包含读取索引及 Agent checkpoint/建议记录；V2.3 目标草案未作为正式迁移加载。工程审查、修复证据、隔离查询测量与未验收边界见 [engineering-stability.md](docs/engineering-stability.md)。
+默认运行迁移为 `0001–0007`，包含读取索引及 Agent checkpoint/建议记录。`server/migrations/m1/` 的 `0008/0009` 由隔离演练显式选择，API/Worker 不会自动加载；把旧服务指向已升级 M1 的库会因版本不匹配拒绝启动。工程审查、修复证据、隔离查询测量与未验收边界见 [engineering-stability.md](docs/engineering-stability.md)。
 
 消息与回复任务同事务提交；通知中断自动重连，推送不可用时页面继续通过定期刷新恢复。`/api/status` 实际探测数据库，故障返回 503，`notificationsConnected` 单独显示通知连接状态；不表示 Worker、模型或转写供应商已就绪。
 

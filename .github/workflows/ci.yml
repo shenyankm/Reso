@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'sheny/**']
   pull_request:
   workflow_dispatch:
 
@@ -32,3 +32,18 @@ jobs:
       - run: uv run scripts/check-database-design.py
       - run: uv run scripts/check-database-draft.py --self-test
       - run: git diff --exit-code
+
+  m1-isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: npm run test:m1:isolated

@@ -4,6 +4,8 @@
 
 配套[完整字段字典](database-field-dictionary-v2.md)列出字段 SQL 类型、可空性、默认值、引用、唯一约束、查询索引、权限和删除行为。本稿解释模型、关键不变量、事务及旧数据怎样承接。V2.1 修订了复查的 10 处缺口；V2.3 修复独立审查的 9 处问题（阶段范围、多人研究通话、反馈、题号、角色、签署、推荐快照和回访来源）；V2.2 按已提供的 Wang 材料补齐规则、决策与练习选择基础，见 [Wang 基础补全](wang-database-foundation-2026-11-16.md)；字段模型以 [database-model-v2.json](database-model-v2.json) 为可维护源，字典及第 18 节映射由检查脚本生成。配套 [JSON Schema](database-json-contracts-v2.json)、[正反例](database-contract-examples-v2.json)和[修订复查记录](database-design-review-2026-11-16.md)。
 
+2026-11-17 实施进展：[M1a/M1 隔离验收](database-m1-isolated-acceptance.md)已覆盖真正增量、合成数据回填、故障恢复及受限只读预览。目标模型和 JSON 契约未改变；维护台账 `reso_migration.backfill_items` 的五个字段另列在验收文档，不计入 76 张业务目标表。现有业务库、默认 0001–0007 入口和原生写入仍未切换。
+
 ## 1．设计范围与取舍
 
 目标清单覆盖现有 21 张业务表：17 张扩展／重构，`questionnaires`、`perspectives`、`note_shares` 计划切换后退役，`consent_records` 仅保留历史用途。另设计 55 张新表，目标清单共 76 张，分四期落地。认证表、迁移表和 pg-boss 内部表不计入这些业务表，不重建。

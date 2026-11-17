@@ -1,6 +1,6 @@
 # 数据库与后端结构
 
-2026-11-16 补充：基于完整交付清单的[数据库目标设计 V2.3](database-design-v2.md)和[表字段字典](database-field-dictionary-v2.md)已整理。已按 10 项复查补齐关系与 JSON 契约，并按 [Wang 基础补全](wang-database-foundation-2026-11-16.md)增加情境规则、命中追踪和练习选择边界，见[修订复查记录](database-design-review-2026-11-16.md)。2026-11-17 又按[独立审查修复台账](database-nine-fixes-2026-11-17.md)补齐 9 项问题。它们是待实施设计，未执行迁移；下文保留现有 0001–0007 的实现与升级记录，不能把目标结构当成当前已建表。
+2026-11-16 补充：基于完整交付清单的[数据库目标设计 V2.3](database-design-v2.md)和[表字段字典](database-field-dictionary-v2.md)已整理。已按 10 项复查补齐关系与 JSON 契约，并按 [Wang 基础补全](wang-database-foundation-2026-11-16.md)增加情境规则、命中追踪和练习选择边界，见[修订复查记录](database-design-review-2026-11-16.md)。2026-11-17 又按[独立审查修复台账](database-nine-fixes-2026-11-17.md)补齐 9 项问题。随后完成了 [M1a/M1 隔离实施与验收](database-m1-isolated-acceptance.md)：仅一次性集群安装 0008/0009、回填合成数据、验证恢复及只读权限。现有业务库与线上服务未迁移；下文保留默认 0001–0007 的实现与升级记录，不能把完整目标结构当成已上线功能。
 
 2026-11-13。PostgreSQL 17，pg 连接池与 Drizzle SQL；保持单体 API 和独立 Worker。
 

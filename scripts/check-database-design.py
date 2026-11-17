@@ -839,7 +839,7 @@ def semantic_case(rule, d):
 
 def render_dictionary(model, bundle):
     out = [f"# Reso V{model['design_version']} 数据库字段字典（目标设计）", '',
-           '初稿：2026-11-16；更新：2026-11-17。配套[数据库目标设计](database-design-v2.md)与[JSON 契约](database-json-contracts-v2.json)。**未执行迁移。**', '',
+           '初稿：2026-11-16；更新：2026-11-17。配套[数据库目标设计](database-design-v2.md)与[JSON 契约](database-json-contracts-v2.json)。现有业务库未迁移；M1a/M1 的一次性合成库验证和维护台账字段见[隔离验收](database-m1-isolated-acceptance.md)。', '',
            '由 [database-model-v2.json](database-model-v2.json) 生成；修改模型后运行 `uv run scripts/check-database-design.py --write`，再去掉 `--write` 复查。', '',
            '字段表列新增／改变／显式保留契约的列；其余沿用 0001–0007，不是最终总列数。可空性指目标状态；回填期可空另见主设计。新增表列出完整业务字段。', '',
            '类型使用 PostgreSQL；默认值为设计值，SQL 实现时需加正确引号和类型。所有 JSONB 绑定 schema；SQL NULL 与 JSON null 不等同。表内“约束”同时列出数据库约束和必须在事务内复验的业务规则，不把跨表检查写作 CHECK。', '',
@@ -1030,7 +1030,25 @@ def check(write=False):
     print(json.dumps(stats, ensure_ascii=False, indent=2))
 
 
+def check_m1_imports(path):
+    rows = load_json(Path(path).read_text())
+    assert isinstance(rows, list) and rows, 'No imported JSON evidence'
+    for row in rows:
+        assert set(row) == {'content', 'confirmation_scope'}
+        assert len(json.dumps(row, ensure_ascii=False).encode()) <= 262144
+        contract_validator('RecordContent').validate(row['content'])
+        contract_validator('ConfirmationScope').validate(row['confirmation_scope'])
+        assert row['confirmation_scope'] == {'type': 'legacy_unknown'}
+    print(json.dumps({'m1_imported_json_contracts': len(rows) * 2}))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--write', action='store_true', help='regenerate dictionary and coverage map only')
-    check(parser.parse_args().write)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--write', action='store_true', help='regenerate dictionary and coverage map only')
+    mode.add_argument('--m1-imports', help='validate synthetic JSON read back from the isolated M1 rehearsal')
+    args = parser.parse_args()
+    if args.m1_imports:
+        check_m1_imports(args.m1_imports)
+    else:
+        check(args.write)

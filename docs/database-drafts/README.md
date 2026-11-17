@@ -1,6 +1,6 @@
 # Wang 数据库扩展草案
 
-2026-11-17。这里只放可审阅的 SQL 和范围清单，不在 `server/migrations`，API/Worker 不会加载。**没有执行迁移、建表、回填或切换应用读写。** 完整目标见 [V2.3 设计](../database-design-v2.md)。
+2026-11-17。这里只放从 0007 开始的累计审阅 SQL 和范围清单，API/Worker 不会加载。M1a/M1 已另外生成 [0008](../../server/migrations/m1/0008_m1a_expand.sql)和[0009 增量](../../server/migrations/m1/0009_m1_foundation_expand.sql)，仅用于已完成的[隔离实施验收](../database-m1-isolated-acceptance.md)；默认业务入口和现有业务库未升级。完整目标见 [V2.3 设计](../database-design-v2.md)。以下累计草案的数量及能力边界保持不变。
 
 ## 当前累计 M4：研究资料和决策评测
 
@@ -14,7 +14,7 @@ M4 相对 M3 增加 research_participants、research_sessions、corpus_assets、
 
 每个 dataset 的同一 group 只有一个 split；评测结果只能引用该 run 的 dataset 成员。rule/model/expert 身份分开，模型评审保留供应商，不冒充独立专家；评审修订通过含 NULL 身份的唯一约束追加，已标安全失败不能记为 pass。评测汇总 v2 按 rule/model/expert、供应商、模型和 rubric 分桶，仅取最新有效评审修订；case 与执行 sample 分开计数，未评分不补零，根平均分固定 NULL，安全失败单列。旧汇总 v1 冻结只读。新增 `agent_policy_rules.skill_codes`、`evaluation_reviews.scores_schema_version/authorization_failure`，规则及路由新写使用 schema 2，评分对象保留原始量纲和权重；汇总按 score_scale 再分桶，安全和授权硬性失败分别记录，不能被高分抵消。所有 55 张新表继续强制 RLS、没有放行策略；评测工具隔离、真实授权/审核、图遍历/发布冻结、撤回传播及原生 API/Worker 尚未接通。
 
-**没有导入录音/书籍/个案、没有创建批准政策或专家记录，没有执行任何 SQL、安装扩展或运行这些原生表的模型评测。** 表结构支持记录“时长未知/材料声称/媒体核验”的区别，不据附件数量认证“20 小时”。
+**没有导入录音/书籍/个案、没有创建批准政策或专家记录，没有部署 M2/M3/M4 或运行这些原生表的模型评测。** M1 验证仅执行于一次性合成库。表结构支持记录“时长未知/材料声称/媒体核验”的区别，不据附件数量认证“20 小时”。
 
 ## 累计 M3：人物、专业支持、预约和通知
 

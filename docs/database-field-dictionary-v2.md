@@ -1,6 +1,6 @@
 # Reso V2.3 数据库字段字典（目标设计）
 
-初稿：2026-11-16；更新：2026-11-17。配套[数据库目标设计](database-design-v2.md)与[JSON 契约](database-json-contracts-v2.json)。**未执行迁移。**
+初稿：2026-11-16；更新：2026-11-17。配套[数据库目标设计](database-design-v2.md)与[JSON 契约](database-json-contracts-v2.json)。现有业务库未迁移；M1a/M1 的一次性合成库验证和维护台账字段见[隔离验收](database-m1-isolated-acceptance.md)。
 
 由 [database-model-v2.json](database-model-v2.json) 生成；修改模型后运行 `uv run scripts/check-database-design.py --write`，再去掉 `--write` 复查。
 

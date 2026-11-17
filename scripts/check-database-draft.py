@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 from pglast.parser import parse_sql_json
+from pglast import split
 from database_artifacts import load_json, self_test as check_artifact_json
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,30 @@ def walk(value):
 
 def columns(items):
     return tuple(item['String']['sval'] for item in items)
+
+
+def m1_migrations(write=False):
+    """The two opt-in files must reconstruct the reviewed cumulative M1 exactly."""
+    a, b = [(DIRECTORY / name).read_text() for name in ('wang-m1a.sql', 'wang-m1.sql')]
+    first, full = parse(a)[1:-1], parse(b)[1:-1]
+    identity = lambda node: json.dumps(node, sort_keys=True)
+    first_keys = {identity(n) for n in first}
+    assert len(first_keys) == len(first)
+    assert first_keys <= {identity(n) for n in full}, 'M1a is not a statement subset of M1'
+    first_sql, full_sql = split(a)[1:-1], split(b)[1:-1]
+    assert len(first_sql) == len(first) and len(full_sql) == len(full)
+    remaining = [s for n, s in zip(full, full_sql) if identity(n) not in first_keys]
+    for name, statements in [('0008_m1a_expand.sql', first_sql), ('0009_m1_foundation_expand.sql', remaining)]:
+        path = ROOT / 'server/migrations/m1' / name
+        expected = '-- Explicit opt-in M1 batch. Default API/Worker remain on 0001-0007.\n-- Transaction and checksum ledger are owned by server/migrations.ts.\n\n' + ';\n\n'.join(statements) + ';\n'
+        if write:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(expected)
+        else:
+            assert path.read_text() == expected, ('M1 batch drift; run --write-m1-migrations', name)
+        assert not any('TransactionStmt' in n for n in parse(expected)), 'Nested COMMIT would defeat migration rollback'
+    assert {identity(n) for n in first + parse(';\n'.join(remaining) + ';')} == {identity(n) for n in full}
+    return {'m1a_statements': len(first), 'm1_increment_statements': len(remaining), 'cumulative_statements': len(full)}
 
 
 def relation(node):
@@ -516,6 +541,7 @@ def self_test(source, manifest, model):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--self-test', action='store_true')
+    parser.add_argument('--write-m1-migrations', action='store_true')
     args = parser.parse_args()
     model = load_json((ROOT / 'docs/database-model-v2.json').read_text())
     if args.self_test: check_artifact_json()
@@ -527,4 +553,5 @@ if __name__ == '__main__':
         checked = check(source, manifest, model)
         if args.self_test: checked['rejected_mutations'] = self_test(source, manifest, model)
         result[stem] = checked
+    result['m1_migrations'] = m1_migrations(args.write_m1_migrations)
     print(json.dumps(result, indent=2))
