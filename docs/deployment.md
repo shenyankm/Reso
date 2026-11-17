@@ -1,10 +1,10 @@
 # 服务器部署
 
-2026-11-15 已部署到 https://openwook.cloud。服务器为 `ubuntu@122.51.255.108`，Ubuntu 26.04、Node.js 22.22.1、PostgreSQL 18.6、Caddy 2.11.9。SSH 主机指纹已由用户通过控制台核对；登录密码没有进入源码、配置或操作文档。
+2026-11-17 已同步到 https://openwook.cloud，当前聊天体验版本与验收见[线上发布记录](chat-release-acceptance.md)。服务器为 `ubuntu@122.51.255.108`，Ubuntu 26.04、Node.js 22.22.1、PostgreSQL 18.6、Caddy 2.11.9。SSH 主机指纹已由用户通过控制台核对；登录密码没有进入源码、配置或操作文档。
 
 ## 服务与文件
 
-- `/opt/reso/releases/20261115T155803Z-ui-fixes`：当前代码与 Web 构建；`/opt/reso/current` 指向该版本。上一版本 `/opt/reso/releases/20261115T153144Z-ui-fixes` 及更早版本仍保留。
+- `/opt/reso/releases/20261117T145042Z-chat-response`：当前代码与 Web 构建；`/opt/reso/current` 指向该版本。原 `20261115T155803Z-ui-fixes`、首次发布 `20261117T143745Z-chat-response` 及更早版本仍保留。
 - `/opt/reso/downloads/Reso-server-debug.apk`：Android ARM64 服务器调试包，公开路径为 `/downloads/Reso-server-debug.apk`。
 - `/etc/reso/runtime.env`：受限数据库连接、会话密钥、公开地址和模型／语音配置。
 - `/etc/reso/migration.env`：额外包含迁移连接，只在迁移时由管理员读取。

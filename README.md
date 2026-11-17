@@ -14,7 +14,7 @@ Web 构建包需要配合 API/Worker/PostgreSQL 使用，不能只打开 index.h
 
 访问 [openwook.cloud](https://openwook.cloud)，或下载 [Android 服务器调试包](https://openwook.cloud/downloads/Reso-server-debug.apk)。本机 AVD 已安装该包，直接连接 HTTPS 服务，不依赖电脑上的 Vite／API／Worker 或 ADB 转发。服务器使用新数据库，需要创建账号；本机已有账号、记录和草稿仍保留在本机环境，没有迁移。
 
-服务器采用 Caddy、systemd、Node.js 和 PostgreSQL；部署位置、更新步骤、备份与验收见 [服务器部署](docs/deployment.md)。本机开发方式继续保留。
+服务器采用 Caddy、systemd、Node.js 和 PostgreSQL；部署位置、更新步骤、备份见 [服务器部署](docs/deployment.md)，2026-11-17 的上线结果、真实模型与模拟器检查及剩余问题见[聊天体验线上验收](docs/chat-release-acceptance.md)。本机开发方式继续保留。
 
 ## 启动
 
