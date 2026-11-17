@@ -1,0 +1,15 @@
+openwook.cloud {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8787
+	}
+	handle_path /downloads/* {
+		root * /opt/reso/downloads
+		file_server
+	}
+	handle {
+		root * /opt/reso/current/dist
+		try_files {path} /index.html
+		file_server
+	}
+}

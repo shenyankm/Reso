@@ -1,0 +1,361 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T16:30:30.806056+00:00",
+  "title": "Design System: Reso",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "tonalRamp": [
+          "oklch(15% 0.003 260)",
+          "oklch(27% 0.007 260)",
+          "oklch(39% 0.010 260)",
+          "oklch(51% 0.012 260)",
+          "oklch(63% 0.012 260)",
+          "oklch(75% 0.010 260)",
+          "oklch(87% 0.006 260)",
+          "oklch(95% 0.002 260)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0.003 260)",
+          "oklch(27% 0.007 260)",
+          "oklch(39% 0.010 260)",
+          "oklch(51% 0.012 260)",
+          "oklch(63% 0.012 260)",
+          "oklch(75% 0.010 260)",
+          "oklch(87% 0.006 260)",
+          "oklch(95% 0.002 260)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.003 260)",
+          "oklch(27% 0.007 260)",
+          "oklch(39% 0.010 260)",
+          "oklch(51% 0.012 260)",
+          "oklch(63% 0.012 260)",
+          "oklch(75% 0.010 260)",
+          "oklch(87% 0.006 260)",
+          "oklch(95% 0.002 260)"
+        ]
+      },
+      "body": {
+        "role": "neutral",
+        "displayName": "Body",
+        "tonalRamp": [
+          "oklch(15% 0.003 260)",
+          "oklch(27% 0.007 260)",
+          "oklch(39% 0.010 260)",
+          "oklch(51% 0.012 260)",
+          "oklch(63% 0.012 260)",
+          "oklch(75% 0.010 260)",
+          "oklch(87% 0.006 260)",
+          "oklch(95% 0.002 260)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.003 260)",
+          "oklch(27% 0.007 260)",
+          "oklch(39% 0.010 260)",
+          "oklch(51% 0.012 260)",
+          "oklch(63% 0.012 260)",
+          "oklch(75% 0.010 260)",
+          "oklch(87% 0.006 260)",
+          "oklch(95% 0.002 260)"
+        ]
+      },
+      "blue": {
+        "role": "primary",
+        "displayName": "Blue",
+        "tonalRamp": [
+          "oklch(15% 0.030 250)",
+          "oklch(27% 0.072 250)",
+          "oklch(39% 0.102 250)",
+          "oklch(51% 0.120 250)",
+          "oklch(63% 0.120 250)",
+          "oklch(75% 0.096 250)",
+          "oklch(87% 0.060 250)",
+          "oklch(95% 0.024 250)"
+        ]
+      },
+      "blue-soft": {
+        "role": "primary",
+        "displayName": "Blue Soft",
+        "tonalRamp": [
+          "oklch(15% 0.006 250)",
+          "oklch(27% 0.015 250)",
+          "oklch(39% 0.021 250)",
+          "oklch(51% 0.025 250)",
+          "oklch(63% 0.025 250)",
+          "oklch(75% 0.020 250)",
+          "oklch(87% 0.013 250)",
+          "oklch(95% 0.005 250)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15% 0.003 260)",
+          "oklch(27% 0.007 260)",
+          "oklch(39% 0.010 260)",
+          "oklch(51% 0.012 260)",
+          "oklch(63% 0.012 260)",
+          "oklch(75% 0.010 260)",
+          "oklch(87% 0.006 260)",
+          "oklch(95% 0.002 260)"
+        ]
+      },
+      "purple": {
+        "role": "secondary",
+        "displayName": "Purple",
+        "tonalRamp": [
+          "oklch(15% 0.030 310)",
+          "oklch(27% 0.072 310)",
+          "oklch(39% 0.102 310)",
+          "oklch(51% 0.120 310)",
+          "oklch(63% 0.120 310)",
+          "oklch(75% 0.096 310)",
+          "oklch(87% 0.060 310)",
+          "oklch(95% 0.024 310)"
+        ]
+      },
+      "purple-soft": {
+        "role": "secondary",
+        "displayName": "Purple Soft",
+        "tonalRamp": [
+          "oklch(15% 0.006 310)",
+          "oklch(27% 0.015 310)",
+          "oklch(39% 0.021 310)",
+          "oklch(51% 0.025 310)",
+          "oklch(63% 0.025 310)",
+          "oklch(75% 0.020 310)",
+          "oklch(87% 0.013 310)",
+          "oklch(95% 0.005 310)"
+        ]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Green",
+        "tonalRamp": [
+          "oklch(15% 0.030 165)",
+          "oklch(27% 0.072 165)",
+          "oklch(39% 0.102 165)",
+          "oklch(51% 0.120 165)",
+          "oklch(63% 0.120 165)",
+          "oklch(75% 0.096 165)",
+          "oklch(87% 0.060 165)",
+          "oklch(95% 0.024 165)"
+        ]
+      },
+      "pink-soft": {
+        "role": "secondary",
+        "displayName": "Pink Soft",
+        "tonalRamp": [
+          "oklch(15% 0.006 340)",
+          "oklch(27% 0.015 340)",
+          "oklch(39% 0.021 340)",
+          "oklch(51% 0.025 340)",
+          "oklch(63% 0.025 340)",
+          "oklch(75% 0.020 340)",
+          "oklch(87% 0.013 340)",
+          "oklch(95% 0.005 340)"
+        ]
+      },
+      "bubble": {
+        "role": "neutral",
+        "displayName": "Bubble",
+        "tonalRamp": [
+          "oklch(15% 0.003 260)",
+          "oklch(27% 0.007 260)",
+          "oklch(39% 0.010 260)",
+          "oklch(51% 0.012 260)",
+          "oklch(63% 0.012 260)",
+          "oklch(75% 0.010 260)",
+          "oklch(87% 0.006 260)",
+          "oklch(95% 0.002 260)"
+        ]
+      },
+      "button-cyan": {
+        "role": "primary",
+        "displayName": "Button Cyan",
+        "tonalRamp": [
+          "oklch(15% 0.006 220)",
+          "oklch(27% 0.015 220)",
+          "oklch(39% 0.021 220)",
+          "oklch(51% 0.025 220)",
+          "oklch(63% 0.025 220)",
+          "oklch(75% 0.020 220)",
+          "oklch(87% 0.013 220)",
+          "oklch(95% 0.005 220)"
+        ]
+      },
+      "button-blue": {
+        "role": "primary",
+        "displayName": "Button Blue",
+        "tonalRamp": [
+          "oklch(15% 0.006 250)",
+          "oklch(27% 0.015 250)",
+          "oklch(39% 0.021 250)",
+          "oklch(51% 0.025 250)",
+          "oklch(63% 0.025 250)",
+          "oklch(75% 0.020 250)",
+          "oklch(87% 0.013 250)",
+          "oklch(95% 0.005 250)"
+        ]
+      },
+      "button-pink": {
+        "role": "primary",
+        "displayName": "Button Pink",
+        "tonalRamp": [
+          "oklch(15% 0.006 340)",
+          "oklch(27% 0.015 340)",
+          "oklch(39% 0.021 340)",
+          "oklch(51% 0.025 340)",
+          "oklch(63% 0.025 340)",
+          "oklch(75% 0.020 340)",
+          "oklch(87% 0.013 340)",
+          "oklch(95% 0.005 340)"
+        ]
+      }
+    },
+    "shadows": [
+      {
+        "name": "floating",
+        "value": "0 5px 18px #26324b0b",
+        "purpose": "Header icon controls and composer."
+      },
+      {
+        "name": "desktop-frame",
+        "value": "0 12px 70px #263b5a12",
+        "purpose": "Centered desktop mobile preview."
+      },
+      {
+        "name": "dialog",
+        "value": "0 20px 80px #14233a28",
+        "purpose": "Native modal overlay."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-duration",
+        "value": ".18s",
+        "purpose": "Background, opacity, and shadow state transitions."
+      },
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Toast entry."
+      },
+      {
+        "name": "toast-entry",
+        "value": ".2s",
+        "purpose": "Short toast entrance; suppressed for reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow-max",
+        "value": "360px"
+      },
+      {
+        "name": "desktop-min",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Gradient conversation action.",
+      "html": "<button class=\"ds-button ds-primary\">继续聊聊 →</button>",
+      "css": ".ds-button{font-family:'PingFang SC','Microsoft YaHei',sans-serif;min-height:44px;border:0;border-radius:24px;padding:11px 18px;font-size:14px;font-weight:500;line-height:1.5;cursor:pointer;transition:background-color .18s,opacity .18s,box-shadow .18s;}.ds-primary{background:var(--button-fill,linear-gradient(105deg,#c4effb 0%,#d8e8ff 48%,#f6dced 100%));color:#1766b5}.ds-button:hover:not(:disabled){filter:brightness(.985)}.ds-button:active:not(:disabled){opacity:.68}.ds-button:focus-visible{outline:3px solid #6da8e8;outline-offset:3px}.ds-button:disabled{opacity:.44;cursor:default}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quieter alternative or decline action.",
+      "html": "<button class=\"ds-button ds-secondary\">先不邀请</button>",
+      "css": ".ds-button{font-family:'PingFang SC','Microsoft YaHei',sans-serif;min-height:44px;border:0;border-radius:24px;padding:11px 18px;font-size:14px;font-weight:500;line-height:1.5;cursor:pointer;transition:background-color .18s,opacity .18s,box-shadow .18s;}.ds-secondary{background:var(--paper,#fff);border:1px solid #d5def0;color:#526b8d}.ds-button:hover:not(:disabled){filter:brightness(.985)}.ds-button:active:not(:disabled){opacity:.68}.ds-button:focus-visible{outline:3px solid #6da8e8;outline-offset:3px}.ds-button:disabled{opacity:.44;cursor:default}@media(prefers-reduced-motion:reduce){.ds-button{transition:none}}"
+    },
+    {
+      "name": "Conversation Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Inline structured content inside the conversation.",
+      "html": "<section class=\"ds-card\"><h2>以你的表达为准</h2><p>你可以慢慢说，也可以随时修改。</p></section>",
+      "css": ".ds-card{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--paper,#fff);color:var(--ink,#243c61);border:1px solid #dce5f4;border-radius:20px;padding:18px}.ds-card h2{margin:0 0 12px;font-size:16px;line-height:1.5;font-weight:600}.ds-card p{margin:9px 0;font-size:13px;line-height:1.75}"
+    },
+    {
+      "name": "Assistant Message",
+      "kind": "custom",
+      "refersTo": "bubble",
+      "description": "Content-sized neutral assistant bubble.",
+      "html": "<div class=\"ds-bubble\">我们可以从一件你在意的小事开始。</div>",
+      "css": ".ds-bubble{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bubble,#ededf0);color:#28303b;border-radius:20px;width:fit-content;max-width:88%;padding:12px 14px;font-size:14px;line-height:1.8;overflow-wrap:anywhere}"
+    },
+    {
+      "name": "Suggestion",
+      "kind": "chip",
+      "refersTo": "suggestion",
+      "description": "Small wrapping conversational shortcut.",
+      "html": "<button class=\"ds-suggestion\">我想慢慢说说</button>",
+      "css": ".ds-suggestion{font-family:'PingFang SC','Microsoft YaHei',sans-serif;min-height:40px;background:var(--paper,#fff);border:1px solid var(--line,#dfe6f2);font-size:11px;border-radius:20px;padding:8px 13px;color:#52708f;cursor:pointer}.ds-suggestion:hover{filter:brightness(.985)}.ds-suggestion:active{opacity:.68}.ds-suggestion:focus-visible{outline:3px solid #6da8e8;outline-offset:3px}"
+    },
+    {
+      "name": "Composer",
+      "kind": "input",
+      "description": "Rounded text composer with an inset send control.",
+      "html": "<div class=\"ds-composer\"><input aria-label=\"发送给 Reso 的消息\" placeholder=\"也可以直接告诉我…\"><button aria-label=\"发送消息\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13\"/></svg></button></div>",
+      "css": ".ds-composer{display:flex;min-height:50px;border-radius:26px;background:var(--paper,#fff);border:1px solid #eff0f4;padding:3px 4px 3px 16px;box-shadow:var(--floating-shadow,0 5px 18px #26324b0b)}.ds-composer:focus-within{border-color:#93bee9}.ds-composer input{font-family:'PingFang SC','Microsoft YaHei',sans-serif;flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--body,#283545);font-size:14px}.ds-composer input::placeholder{color:#5f6c80}.ds-composer button{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;border:1px solid #edf0f4;background:#d9ecff;color:var(--blue,#1674d5);cursor:pointer}.ds-composer button:hover{filter:brightness(.985)}.ds-composer button:active{opacity:.68}.ds-composer button:focus-visible{outline:3px solid #6da8e8;outline-offset:3px}"
+    },
+    {
+      "name": "Bottom Navigation",
+      "kind": "nav",
+      "description": "Two equal destinations with a blue active halo.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"主导航\"><button aria-current=\"page\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"m12 3 2.7 6.3L21 12l-6.3 2.7L12 21l-2.7-6.3L3 12l6.3-2.7L12 3Z\"/></svg><span>Reso</span></button><button><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><circle cx=\"9\" cy=\"8\" r=\"3\"/><path d=\"M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 21v-2a6 6 0 0 0-4-5.7\"/></svg><span>我的关系</span></button></nav>",
+      "css": ".ds-nav{display:flex;background:#fff;padding:2px 16px 7px;min-height:61px;border-top:1px solid #f0f1f6}.ds-nav button{font-family:'PingFang SC','Microsoft YaHei',sans-serif;flex:1;display:flex;gap:3px;flex-direction:column;align-items:center;justify-content:center;min-height:49px;color:#5e6d82;border:0;background:none;cursor:pointer}.ds-nav svg{width:20px;height:20px}.ds-nav span{font-size:11px}.ds-nav button[aria-current]{color:var(--blue,#1674d5)}.ds-nav button[aria-current] svg{background:#e7f0ff;box-shadow:0 0 0 6px #edf4ff;border-radius:50%}.ds-nav button:hover{filter:brightness(.985)}.ds-nav button:active{opacity:.68}.ds-nav button:focus-visible{outline:3px solid #6da8e8;outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Reso UI V2.1 — a quiet conversation",
+    "overview": "Reso UI V2.1 uses a quiet, light mobile conversation space. Pale blue and pink action gradients sit beside neutral chat bubbles and lavender story cards. The supplied Reso character and story illustrations carry the personality; the interface supports them with restrained chrome and rounded surfaces.\n\nThis documents the existing implementation, rather than proposing a new identity. `src/styles.css` owns the implemented values; `src/App.tsx` owns the Button, Bubble, Card, and native Dialog conventions.",
+    "keyCharacteristics": [
+      "Single-column mobile conversations and inline cards.",
+      "Pale blue/pink gradient actions, neutral and lavender surfaces.",
+      "Original Reso mascot and supplied story imagery.",
+      "Clear dark text, visible focus, and reduced-motion support."
+    ],
+    "rules": [
+      {
+        "name": "The Source Continuity Rule",
+        "body": "Keep the original gradient, mascot, and story imagery together; they define the supplied visual world.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do reuse the supplied Reso mascot and story images.",
+      "Do keep primary actions in the existing pale blue/pink gradient.",
+      "Do place exercises, sharing choices, and confirmations inside the conversation.",
+      "Do preserve visible keyboard focus, labeled icon buttons, and reduced-motion behavior."
+    ],
+    "donts": [
+      "Don't introduce a new visual identity or replace the supplied imagery.",
+      "Don't stretch the mobile composition into a desktop dashboard.",
+      "Don't make small supporting text pale enough to lose contrast."
+    ]
+  }
+}

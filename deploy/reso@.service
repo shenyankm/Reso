@@ -1,0 +1,25 @@
+[Unit]
+Description=Reso %i
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=reso
+Group=reso
+WorkingDirectory=/opt/reso/current
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/reso/runtime.env
+ExecStart=/usr/bin/node scripts/run-service.mjs %i
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

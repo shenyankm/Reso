@@ -1,0 +1,67 @@
+{
+  "design_version": "2.3",
+  "stage": "M1a-expand-review-only",
+  "sql_file": "wang-m1a.sql",
+  "create_tables": [
+    "policy_versions",
+    "file_objects",
+    "conversations",
+    "agent_policy_rules",
+    "conversation_states",
+    "agent_decisions",
+    "agent_decision_rule_matches",
+    "agent_tool_calls"
+  ],
+  "expand_columns": {
+    "messages": [
+      "conversation_id"
+    ],
+    "agent_runs": [
+      "conversation_id",
+      "logical_turn_id",
+      "attempt_no",
+      "state_revision",
+      "permission_epoch",
+      "consent_epochs",
+      "agent_policy_version_id",
+      "input_manifest",
+      "final_decision_id",
+      "input_tokens",
+      "output_tokens",
+      "reasoning_tokens",
+      "estimated_cost_minor",
+      "cost_currency",
+      "latency_ms",
+      "retention_until",
+      "invalidated_at"
+    ]
+  },
+  "deferred_columns": {
+    "conversation_states.last_interaction_id": "M2 interaction_events: defer the column and its FK together",
+    "agent_tool_calls.interaction_event_id": "M2 interaction_events: defer the column and its FK together",
+    "agent_runs.knowledge_release_id": "M2 knowledge_releases: defer the column and its FK together"
+  },
+  "expand_nullable": [
+    "agent_runs.conversation_id",
+    "messages.conversation_id"
+  ],
+  "parent_unique_keys": {
+    "applications": [
+      [
+        "id",
+        "event_id",
+        "applicant_id"
+      ]
+    ]
+  },
+  "runtime_access": "deny all on new tables until native application authorization, JSON validation and role policies have been implemented and tested",
+  "remaining_transaction_gates": [
+    "Policy child-list JCS hash, approval roles and immutable published policy/rules",
+    "Exactly one selected rule and route/column/matched-rule agreement",
+    "Current consent, source visibility, safety-case assignment/release and input/state CAS",
+    "Native JSON Schema version dispatch and 256 KiB input limits",
+    "Backfill owner/domain and input-message mappings without invented history",
+    "Per-role table grants, RLS policies and connection-pool context reset",
+    "M2 interaction, method/release and practice confirmation subset before native method execution"
+  ]
+}

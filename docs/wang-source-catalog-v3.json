@@ -1,0 +1,1159 @@
+{
+  "schema_version": 1,
+  "title": "Wang 方案文档目录与编号核对",
+  "review_status": "discussion_draft_pending_professional_review",
+  "not_a_runtime_policy": true,
+  "not_an_evaluation_gold_set": true,
+  "chat_history_read": false,
+  "recordings_and_authorizations_verified": false,
+  "documents": [
+    {
+      "document_key": "decision-framework",
+      "filename": "Reso_Agent_对话决策框架 (1).pdf",
+      "sha256": "e9924ab204a9a939655ecf8c9f45469a1258b9b0b42b27da8182541d58583bcb",
+      "pages": 21
+    },
+    {
+      "document_key": "interaction-v3",
+      "filename": "Reso_Agent_交互流程与能力设计说明_V3.0 (1).pdf",
+      "sha256": "7b769e02379945306f1751972daf09a639a63d9fbe3ae2cf7e84cd26f91c52f6",
+      "pages": 26
+    }
+  ],
+  "routes": [
+    {
+      "route_code": "R0",
+      "title": "安全与危机支持",
+      "document_key": "interaction-v3",
+      "page": 3
+    },
+    {
+      "route_code": "R1",
+      "title": "情绪承接与稳定",
+      "document_key": "interaction-v3",
+      "page": 3
+    },
+    {
+      "route_code": "R2",
+      "title": "事件、感受与需求探索",
+      "document_key": "interaction-v3",
+      "page": 3
+    },
+    {
+      "route_code": "R3",
+      "title": "心理机制探索与自我理解",
+      "document_key": "interaction-v3",
+      "page": 3
+    },
+    {
+      "route_code": "R4",
+      "title": "沟通、边界与心理技能训练",
+      "document_key": "interaction-v3",
+      "page": 3
+    },
+    {
+      "route_code": "R5",
+      "title": "现实行动与自主决策",
+      "document_key": "interaction-v3",
+      "page": 3
+    },
+    {
+      "route_code": "R6",
+      "title": "多方关系理解与沟通协作",
+      "document_key": "interaction-v3",
+      "page": 3
+    },
+    {
+      "route_code": "R7",
+      "title": "专业支持与转介",
+      "document_key": "interaction-v3",
+      "page": 3
+    }
+  ],
+  "skills": [
+    {
+      "skill_code": "emotion_support",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "event_reconstruction",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "deep_inquiry",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "reflection_check",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "emotion_meaning_exploration",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "pattern_recognition",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "mechanism_exploration",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "perspective_shift",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "emotion_regulation",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "communication_coach",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "autonomy_support",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "micro_action_planning",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "relational_perspective_comparison",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "shared_dialogue_host",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "support_effect_review",
+      "document_key": "interaction-v3",
+      "page": 5
+    },
+    {
+      "skill_code": "relationship_progress_tracking",
+      "document_key": "interaction-v3",
+      "page": 5
+    }
+  ],
+  "proposed_tools": [
+    {
+      "tool_code": "safety_check",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "dialogue_router",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "load_event_memory",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "save_event_summary",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "match_pattern_library",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "retrieve_support_knowledge",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "create_action_plan",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "start_roleplay",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "check_share_permission",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "manage_shared_room",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "search_expert_catalog",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "prepare_human_handoff",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "save_stage_feedback",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "request_professional_review",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    },
+    {
+      "tool_code": "manage_consent",
+      "document_key": "interaction-v3",
+      "page": 6,
+      "interface_status": "proposed_not_implemented_by_this_catalog"
+    }
+  ],
+  "nodes": [
+    {
+      "node_code": "A00",
+      "title": "安全与独立表达",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 10,
+      "listed_routes": [
+        "R0",
+        "R1"
+      ],
+      "listed_skills": [
+        "emotion_support"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A01",
+      "title": "初次倾诉",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 10,
+      "listed_routes": [
+        "R1"
+      ],
+      "listed_skills": [
+        "emotion_support"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A02",
+      "title": "事件还原",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 10,
+      "listed_routes": [
+        "R2"
+      ],
+      "listed_skills": [
+        "event_reconstruction"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A03",
+      "title": "深层追问",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 10,
+      "listed_routes": [
+        "R2"
+      ],
+      "listed_skills": [
+        "deep_inquiry"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A04",
+      "title": "复述校准",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 11,
+      "listed_routes": [
+        "R2"
+      ],
+      "listed_skills": [
+        "reflection_check"
+      ],
+      "listed_tools": [
+        "save_event_summary"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A04-1",
+      "title": "感受与需要",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 11,
+      "listed_routes": [
+        "R2"
+      ],
+      "listed_skills": [
+        "deep_inquiry",
+        "emotion_meaning_exploration"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A05-1",
+      "title": "行为循环",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 11,
+      "listed_routes": [
+        "R3"
+      ],
+      "listed_skills": [
+        "pattern_recognition"
+      ],
+      "listed_tools": [
+        "match_pattern_library"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A05-2",
+      "title": "心理机制探索",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 11,
+      "listed_routes": [
+        "R3"
+      ],
+      "listed_skills": [
+        "mechanism_exploration"
+      ],
+      "listed_tools": [
+        "match_pattern_library"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A06-1",
+      "title": "过程与结果",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 11,
+      "listed_routes": [
+        "R3"
+      ],
+      "listed_skills": [
+        "perspective_shift"
+      ],
+      "listed_tools": [
+        "retrieve_support_knowledge"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A06-2",
+      "title": "事件与个人价值",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 12,
+      "listed_routes": [
+        "R3"
+      ],
+      "listed_skills": [
+        "perspective_shift"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A06-3",
+      "title": "外界与自我评价",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 12,
+      "listed_routes": [
+        "R3",
+        "R5"
+      ],
+      "listed_skills": [
+        "perspective_shift",
+        "autonomy_support"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A06-4",
+      "title": "努力与身心照顾",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 12,
+      "listed_routes": [
+        "R3",
+        "R5"
+      ],
+      "listed_skills": [
+        "perspective_shift",
+        "autonomy_support"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A07",
+      "title": "行动转化",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 12,
+      "listed_routes": [
+        "R5"
+      ],
+      "listed_skills": [
+        "autonomy_support",
+        "micro_action_planning"
+      ],
+      "listed_tools": [
+        "create_action_plan"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "A08",
+      "title": "阶段结束",
+      "scenario": "A",
+      "document_key": "interaction-v3",
+      "page": 12,
+      "listed_routes": [
+        "R1",
+        "R5"
+      ],
+      "listed_skills": [
+        "reflection_check"
+      ],
+      "listed_tools": [
+        "save_event_summary",
+        "save_stage_feedback"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B01",
+      "title": "再次来访",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 13,
+      "listed_routes": [
+        "R1"
+      ],
+      "listed_skills": [
+        "emotion_support"
+      ],
+      "listed_tools": [
+        "safety_check",
+        "load_event_memory"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B02",
+      "title": "支持效果复盘",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 13,
+      "listed_routes": [
+        "R1",
+        "R2"
+      ],
+      "listed_skills": [
+        "support_effect_review"
+      ],
+      "listed_tools": [
+        "save_stage_feedback"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B03",
+      "title": "关系变化",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 13,
+      "listed_routes": [
+        "R2"
+      ],
+      "listed_skills": [
+        "event_reconstruction",
+        "support_effect_review"
+      ],
+      "listed_tools": [
+        "save_event_summary"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B04",
+      "title": "核心感受",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 13,
+      "listed_routes": [
+        "R1",
+        "R0"
+      ],
+      "listed_skills": [
+        "emotion_support"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B04-1",
+      "title": "感受具象化",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 14,
+      "listed_routes": [
+        "R2"
+      ],
+      "listed_skills": [
+        "emotion_meaning_exploration"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B04-2",
+      "title": "个人意义确认",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 14,
+      "listed_routes": [
+        "R2",
+        "R3"
+      ],
+      "listed_skills": [
+        "reflection_check",
+        "mechanism_exploration"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B05",
+      "title": "选择支持方式",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 14,
+      "listed_routes": [
+        "R1",
+        "R3",
+        "R4",
+        "R7"
+      ],
+      "listed_skills": [
+        "perspective_shift"
+      ],
+      "listed_tools": [
+        "dialogue_router"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B05-1",
+      "title": "评价分离",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 14,
+      "listed_routes": [
+        "R3"
+      ],
+      "listed_skills": [
+        "perspective_shift"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B06-1",
+      "title": "求助自主权",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 14,
+      "listed_routes": [
+        "R5"
+      ],
+      "listed_skills": [
+        "autonomy_support"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B06-2",
+      "title": "生活自主性",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 15,
+      "listed_routes": [
+        "R5"
+      ],
+      "listed_skills": [
+        "autonomy_support"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "B07",
+      "title": "保存进展",
+      "scenario": "B",
+      "document_key": "interaction-v3",
+      "page": 15,
+      "listed_routes": [
+        "R1",
+        "R5"
+      ],
+      "listed_skills": [
+        "support_effect_review"
+      ],
+      "listed_tools": [
+        "save_event_summary",
+        "save_stage_feedback"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D00",
+      "title": "独立入口",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 16,
+      "listed_routes": [
+        "R1",
+        "R0"
+      ],
+      "listed_skills": [
+        "emotion_support"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D01",
+      "title": "情绪承接",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 16,
+      "listed_routes": [
+        "R1"
+      ],
+      "listed_skills": [
+        "emotion_support"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D02",
+      "title": "事件还原",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 16,
+      "listed_routes": [
+        "R2"
+      ],
+      "listed_skills": [
+        "event_reconstruction"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D03",
+      "title": "动机澄清",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 16,
+      "listed_routes": [
+        "R2",
+        "R3"
+      ],
+      "listed_skills": [
+        "emotion_meaning_exploration"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D04",
+      "title": "机制探索",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 16,
+      "listed_routes": [
+        "R3"
+      ],
+      "listed_skills": [
+        "mechanism_exploration"
+      ],
+      "listed_tools": [
+        "match_pattern_library"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D05",
+      "title": "认知与行为差距",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 17,
+      "listed_routes": [
+        "R3",
+        "R4"
+      ],
+      "listed_skills": [
+        "emotion_regulation"
+      ],
+      "listed_tools": [
+        "retrieve_support_knowledge"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D06",
+      "title": "行为训练",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 17,
+      "listed_routes": [
+        "R4"
+      ],
+      "listed_skills": [
+        "emotion_regulation",
+        "communication_coach"
+      ],
+      "listed_tools": [
+        "start_roleplay"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "D07",
+      "title": "行为反馈",
+      "scenario": "D",
+      "document_key": "interaction-v3",
+      "page": 17,
+      "listed_routes": [
+        "R2",
+        "R4",
+        "R7"
+      ],
+      "listed_skills": [
+        "support_effect_review"
+      ],
+      "listed_tools": [
+        "save_stage_feedback"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C01",
+      "title": "沟通需求",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 18,
+      "listed_routes": [
+        "R2",
+        "R4"
+      ],
+      "listed_skills": [
+        "communication_coach"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C02",
+      "title": "模拟沟通",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 18,
+      "listed_routes": [
+        "R4"
+      ],
+      "listed_skills": [
+        "communication_coach"
+      ],
+      "listed_tools": [
+        "start_roleplay"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C03",
+      "title": "邀请准备",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 18,
+      "listed_routes": [
+        "R6"
+      ],
+      "listed_skills": [],
+      "listed_tools": [
+        "safety_check",
+        "check_share_permission"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C04",
+      "title": "安全阻断",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 18,
+      "listed_routes": [
+        "R0"
+      ],
+      "listed_skills": [],
+      "listed_tools": [
+        "safety_check",
+        "request_professional_review"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C05",
+      "title": "共同沟通准入",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 18,
+      "listed_routes": [
+        "R6"
+      ],
+      "listed_skills": [
+        "shared_dialogue_host"
+      ],
+      "listed_tools": [
+        "check_share_permission",
+        "manage_shared_room"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C05-1",
+      "title": "双方视角比较",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 19,
+      "listed_routes": [
+        "R6"
+      ],
+      "listed_skills": [
+        "relational_perspective_comparison",
+        "shared_dialogue_host"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C06",
+      "title": "母亲表达",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 19,
+      "listed_routes": [
+        "R4",
+        "R6"
+      ],
+      "listed_skills": [
+        "communication_coach"
+      ],
+      "listed_tools": [
+        "retrieve_support_knowledge"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C06-1",
+      "title": "孩子的回应",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 19,
+      "listed_routes": [
+        "R1",
+        "R6"
+      ],
+      "listed_skills": [
+        "emotion_support",
+        "shared_dialogue_host"
+      ],
+      "listed_tools": [],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C07",
+      "title": "共同约定",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 19,
+      "listed_routes": [
+        "R5",
+        "R6"
+      ],
+      "listed_skills": [
+        "shared_dialogue_host"
+      ],
+      "listed_tools": [
+        "manage_shared_room"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "C08",
+      "title": "真人支持",
+      "scenario": "C",
+      "document_key": "interaction-v3",
+      "page": 19,
+      "listed_routes": [
+        "R7",
+        "R0"
+      ],
+      "listed_skills": [],
+      "listed_tools": [
+        "search_expert_catalog",
+        "prepare_human_handoff"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "E01",
+      "title": "母亲回访",
+      "scenario": "E",
+      "document_key": "interaction-v3",
+      "page": 20,
+      "listed_routes": [
+        "R2",
+        "R5"
+      ],
+      "listed_skills": [
+        "relationship_progress_tracking"
+      ],
+      "listed_tools": [
+        "save_stage_feedback"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "E02",
+      "title": "孩子独立回访",
+      "scenario": "E",
+      "document_key": "interaction-v3",
+      "page": 20,
+      "listed_routes": [
+        "R1",
+        "R2"
+      ],
+      "listed_skills": [
+        "emotion_support",
+        "relationship_progress_tracking"
+      ],
+      "listed_tools": [
+        "safety_check"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "E03",
+      "title": "效果复盘",
+      "scenario": "E",
+      "document_key": "interaction-v3",
+      "page": 20,
+      "listed_routes": [
+        "R2",
+        "R3",
+        "R7"
+      ],
+      "listed_skills": [
+        "support_effect_review"
+      ],
+      "listed_tools": [
+        "dialogue_router",
+        "save_stage_feedback"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    },
+    {
+      "node_code": "E04",
+      "title": "持续支持",
+      "scenario": "E",
+      "document_key": "interaction-v3",
+      "page": 20,
+      "listed_routes": [
+        "R5"
+      ],
+      "listed_skills": [
+        "autonomy_support"
+      ],
+      "listed_tools": [
+        "manage_consent"
+      ],
+      "record_kind": "design_node",
+      "response_origin": "proposed_example",
+      "actual_execution_verified": false
+    }
+  ],
+  "constraints": [
+    "R0-R7 are route identifiers, not policy rule IDs or ordered workflow steps.",
+    "A/B/C/D/E node identifiers are scenario nodes, not routes or independently approved rules.",
+    "Legacy engineering A-H routes have no automatic one-to-one translation into R0-R7.",
+    "Listed tools include conditional proposals, not mandatory calls, approved interfaces or actual execution.",
+    "Source labels and proposed replies are not proof of authorized research data, actual events or lasting benefit.",
+    "No raw participant quotations or proposed clinical replies are copied into this catalog."
+  ]
+}

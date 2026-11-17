@@ -1,0 +1,221 @@
+{
+  "design_version": "2.3",
+  "stage": "M1-expand-review-only",
+  "sql_file": "wang-m1.sql",
+  "create_tables": [
+    "policy_versions",
+    "guardian_links",
+    "consent_grants",
+    "conversations",
+    "record_versions",
+    "record_sources",
+    "agent_policy_rules",
+    "conversation_states",
+    "agent_decisions",
+    "agent_decision_rule_matches",
+    "agent_tool_calls",
+    "professional_credentials",
+    "safety_cases",
+    "support_handoffs",
+    "support_resources",
+    "staff_assignments",
+    "audit_events",
+    "data_requests",
+    "data_request_items",
+    "file_objects"
+  ],
+  "expand_columns": {
+    "profiles": [
+      "age_band_code",
+      "age_policy_version_id",
+      "age_basis",
+      "age_checked_at",
+      "age_valid_until",
+      "country_code",
+      "region_code",
+      "timezone",
+      "communication_preferences",
+      "preferences_schema_version",
+      "consent_epoch",
+      "account_state",
+      "updated_at"
+    ],
+    "events": [
+      "lifecycle_status",
+      "lifecycle_version",
+      "closed_at",
+      "reopened_at",
+      "erasure_requested_at"
+    ],
+    "members": [
+      "membership_generation",
+      "participant_role",
+      "left_at",
+      "history_policy_version_id",
+      "history_mode",
+      "history_from_message_id"
+    ],
+    "messages": [
+      "conversation_id",
+      "content_kind",
+      "hypothetical",
+      "redacted_at",
+      "message_purpose",
+      "context_room_conversation_id",
+      "context_room_message_id"
+    ],
+    "understandings": [
+      "conversation_id",
+      "kind",
+      "current_record_version_id",
+      "record_state",
+      "supersedes_id",
+      "updated_at",
+      "request_id"
+    ],
+    "understanding_confirmations": [
+      "record_version_id",
+      "membership_generation",
+      "request_id",
+      "updated_at"
+    ],
+    "share_snapshots": [
+      "source_conversation_id",
+      "source_record_version_id",
+      "snapshot_kind",
+      "payload",
+      "payload_schema_version",
+      "content_sha256",
+      "state"
+    ],
+    "share_grants": [
+      "target_event_id",
+      "target_conversation_id",
+      "purpose_code",
+      "permissions",
+      "membership_generation",
+      "application_id",
+      "consent_grant_id",
+      "expires_at"
+    ],
+    "agent_runs": [
+      "conversation_id",
+      "logical_turn_id",
+      "attempt_no",
+      "state_revision",
+      "permission_epoch",
+      "consent_epochs",
+      "agent_policy_version_id",
+      "input_manifest",
+      "final_decision_id",
+      "input_tokens",
+      "output_tokens",
+      "reasoning_tokens",
+      "estimated_cost_minor",
+      "cost_currency",
+      "latency_ms",
+      "retention_until",
+      "invalidated_at"
+    ],
+    "revisions": [
+      "conversation_id",
+      "entity_type",
+      "entity_reference",
+      "entity_version",
+      "request_id"
+    ]
+  },
+  "deferred_columns": {
+    "record_versions.note_application_id": "M3: consultation_notes needs native conversation ownership before version references",
+    "consent_grants.participant_id": "Later phase: research_participants.id is not part of the M1 structural scope; defer the column and FK together",
+    "consent_grants.scope_research_session_id": "Later phase: research_sessions.id is not part of the M1 structural scope; defer the column and FK together",
+    "record_versions.exercise_id": "Later phase: exercises.id is not part of the M1 structural scope; defer the column and FK together",
+    "record_sources.source_assessment_submission_id": "Later phase: assessment_submissions.id is not part of the M1 structural scope; defer the column and FK together",
+    "conversation_states.last_interaction_id": "Later phase: interaction_events.id is not part of the M1 structural scope; defer the column and FK together",
+    "agent_tool_calls.interaction_event_id": "Later phase: interaction_events.id is not part of the M1 structural scope; defer the column and FK together",
+    "data_requests.participant_id": "Later phase: research_participants.id is not part of the M1 structural scope; defer the column and FK together",
+    "data_requests.assessment_session_id": "Later phase: assessment_sessions.id is not part of the M1 structural scope; defer the column and FK together",
+    "data_requests.exercise_id": "Later phase: exercises.id is not part of the M1 structural scope; defer the column and FK together",
+    "data_requests.corpus_asset_id": "Later phase: corpus_assets.id is not part of the M1 structural scope; defer the column and FK together",
+    "messages.exercise_id": "Later phase: exercises.id is not part of the M1 structural scope; defer the column and FK together",
+    "understandings.subject_person_id": "Later phase: people.id is not part of the M1 structural scope; defer the column and FK together",
+    "agent_runs.knowledge_release_id": "Later phase: knowledge_releases.id is not part of the M1 structural scope; defer the column and FK together",
+    "data_requests.requester_participant_id": "M4: external research requester identity is separate from the target; defer column and FK together"
+  },
+  "expand_nullable": [
+    "messages.conversation_id",
+    "understandings.conversation_id",
+    "share_grants.permissions",
+    "agent_runs.conversation_id",
+    "messages.hypothetical",
+    "understandings.kind"
+  ],
+  "parent_unique_keys": {
+    "applications": [
+      [
+        "id",
+        "event_id",
+        "applicant_id"
+      ]
+    ]
+  },
+  "runtime_access": "deny all on new tables until native application authorization, JSON validation and role policies have been implemented and tested",
+  "remaining_transaction_gates": [
+    "Policy child-list JCS hash, approval roles and immutable published policy/rules",
+    "Exactly one selected rule and route/column/matched-rule agreement",
+    "Current consent, source visibility, safety-case assignment/release and input/state CAS",
+    "Native JSON Schema version dispatch and 256 KiB input limits",
+    "Backfill owner/domain and input-message mappings without invented history",
+    "Per-role table grants, RLS policies and connection-pool context reset",
+    "M2 interaction, method/release and practice confirmation subset before native method execution",
+    "Receiver identity/signature, handoff audit resource/action/revision, and disclosure authorization; transport receipts never acknowledge a human handoff",
+    "Bind RecordContent.type to the actual immutable parent kind; sign each exact note version once with current service authority and credential, never infer historical signatures from the mutable root"
+  ],
+  "expand_default_overrides": {
+    "messages.hypothetical": null,
+    "understandings.kind": null
+  },
+  "deferred_existing_changes": {
+    "events.owner_id": "Do not drop NOT NULL/change the existing owner cascade until coordinated erasure and conversation authorization cutover",
+    "messages.domain": "Do not drop NOT NULL or treat a missing domain as private before native readers are active",
+    "agent_runs.domain": "Retain the existing private/room projection until all native run paths are converted",
+    "understandings.domain": "Retain the existing domain projection before source/confirmation backfill",
+    "understandings.source_message_id": "Retain existing NOT NULL/source uniqueness until record_sources and native confirmation cutover"
+  },
+  "restricted_kinds": {
+    "consent_grants.scope_kind": [
+      "account",
+      "event"
+    ],
+    "record_versions.parent": [
+      "understanding"
+    ],
+    "record_sources.source": [
+      "message",
+      "record_version",
+      "snapshot"
+    ],
+    "data_requests.scope_kind": [
+      "account",
+      "event",
+      "conversation",
+      "understanding",
+      "record_version",
+      "message"
+    ],
+    "data_requests.requester_kind": [
+      "user",
+      "verified_representative"
+    ],
+    "record_versions.content.type": [
+      "understanding"
+    ]
+  },
+  "reviewed_row_checks": {
+    "record_versions.ck_record_content_parent": "((content->>'type' = 'understanding' AND understanding_id IS NOT NULL)) IS TRUE",
+    "record_versions.ck_record_signature": "num_nonnulls(signed_by_user_id,signer_credential_id,signed_at) = 0",
+    "data_requests.ck_request_scope_kind": "scope_kind IN ('account','event','conversation','understanding','record_version','message')",
+    "data_requests.ck_request_schema": "request_payload_schema_version = 2",
+    "share_grants.ck_share_grant_purpose": "purpose_code IS NULL OR purpose_code IN ('personal_context','room_discussion','professional_service','action_followup')"
+  }
+}
