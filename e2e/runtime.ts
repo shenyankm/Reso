@@ -12,7 +12,7 @@ import {processReply as processProductionReply} from '../server/worker'
 import type {ReplyJob} from '../server/worker'
 import type {Model} from '../server/agent'
 
-export async function startRuntime(artifacts:string,overrideModel?:Model){
+export async function startRuntime(artifacts:string,overrideModel?:Model,realAgent=false){
   // Test processes never inherit paid provider credentials.
   for(const key of Object.keys(process.env))if(key.startsWith('DEEPSEEK_')||key.startsWith('DOUBAO_'))delete process.env[key]
   process.env.PUBLIC_ORIGIN='http://127.0.0.1:5189'
@@ -24,10 +24,9 @@ export async function startRuntime(artifacts:string,overrideModel?:Model){
   let service:Awaited<ReturnType<typeof createApp>>|undefined,web:Awaited<ReturnType<typeof preview>>|undefined
   const errors:{route:string;code:string;message:string;stack?:string}[]=[]
   const control={model:'reply' as 'reply'|'error'|'silent',calls:0,asr:'error' as 'error'|'text',asrBytes:0}
-  const model:Model=overrideModel??(async(prompt,json,_signal,onReasoning)=>{
+  const model:Model=overrideModel??(async(prompt,json)=>{
     control.calls++
     if(control.model==='error')throw new Error('E2E_PROVIDER_UNAVAILABLE')
-    onReasoning?.(json?'先区分原话、感受和未确定之处，避免把对方动机当成事实。':'用简短、具体的话回应，并把是否继续练习的选择留给本人。')
     const context=JSON.parse(prompt.split('授权上下文：')[1].split('\n')[0])
     if(json)return JSON.stringify({understanding_kind:context.domain==='private'&&context.messages.at(-1)?.text.includes('怕话没说完')?'inference':null,intent:'理解学习安排与休息时间的分歧',strategy:control.model==='silent'?'silent':'listen',evidence_ids:[],uncertainty:'隔离测试使用固定对话，不评估真实模型能力',needs_human:false})
     return context.domain==='room'?roomReply:context.messages.at(-1)?.text.includes('怕话没说完')?retryReply:reply
@@ -49,7 +48,7 @@ export async function startRuntime(artifacts:string,overrideModel?:Model){
         return control.asr==='error'?reply.code(503).send({error:'E2E：语音授权未通过，请用文字输入'}):reply.send({text:'等我把这周的复习计划说完，再一起商量休息时间。'})
       }
     })
-    await service.queue!.work<ReplyJob>('agent.reply',{batchSize:1,pollingIntervalSeconds:.5},async jobs=>{for(const job of jobs)await processReply(service!.database,job.data,service!.notify,model,job.signal)})
+    await service.queue!.work<ReplyJob>('agent.reply',{batchSize:1,pollingIntervalSeconds:.5},async jobs=>{for(const job of jobs)await (realAgent?processProductionReply:processReply)(service!.database,job.data,service!.notify,model,job.signal)})
     await service.app.listen({host:'127.0.0.1',port:0})
     const apiOrigin=`http://127.0.0.1:${(service.app.server.address() as AddressInfo).port}`
     web=await preview({logLevel:'silent',preview:{host:'127.0.0.1',port:0,strictPort:true,headers:{'Cache-Control':'no-store'},proxy:{'/api':apiOrigin}}})

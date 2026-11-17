@@ -607,6 +607,8 @@ button:not(:disabled):hover { filter: brightness(.985); }
 .message-reasoning summary { min-height: 48px; padding: 12px 14px; cursor: pointer; font-size: 13px; }
 .message-reasoning > .fineprint { margin: 0; padding: 0 14px 8px; }
 .reasoning-content { max-height: min(320px, 45dvh); overflow: auto; padding: 0 14px 14px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.8; }
+.reply-progress { margin: 0; padding: 6px 12px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.progressive-reply { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 
 .people-header .header-name { min-width: 0; }

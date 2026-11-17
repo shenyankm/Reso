@@ -4,6 +4,7 @@ import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Download, Fi
 import { Bubble, Button, Card, Dialog, SaveStatus } from './components'
 import { api, ApiError, clientId } from './api'
 import {AgentSuggestion} from './AgentSuggestion'
+import {ProgressiveReply} from './ProgressiveReply'
 import {Profile,SavedRecords,PrivacyData} from './Profile'
 import {PeopleOverview,TopicCards} from './PeopleOverview'
 import {exportRecord} from './export'
@@ -11,9 +12,9 @@ import {createRequestScope} from './requests'
 import {clearDrafts,hasDrafts,useDraft} from './drafts'
 import { acts } from './demo'
 import { eventHash,parseEventLink } from '../shared/navigation'
-import { ExerciseProgress,UnderstandingCards,UnderstandingPrompt,MessageReasoning,PracticeFields,FollowupForm,FollowupList,ClientApplication,CounselorApplication,ShareMembers } from './WorkflowCards'
+import { ExerciseProgress,UnderstandingCards,UnderstandingPrompt,MessageReasoning,ReplyProgress,PracticeFields,FollowupForm,FollowupList,ClientApplication,CounselorApplication,ShareMembers } from './WorkflowCards'
 import { scqaItems, scqaOptions, scqaVersion, scales,firstUnanswered } from '../shared/scqa'
-import type { Application, Consultant, Domain, EventDetail, EventRecord, Exercise, User, Followup,MessagePage,SavedRecord,SavedRecordPage,InvitationPreview,PersonConnection } from '../shared/types'
+import type { Application, Consultant, Domain, EventDetail, EventRecord, Exercise, User, Followup,MessagePage,SavedRecord,SavedRecordPage,InvitationPreview,PersonConnection,ChatMessage } from '../shared/types'
 
 type View='profile'|'records'|'privacy'|'chat'|'relationships'|'questionnaire'|'discovery'|'exercise'|'memory'|'invite'|'perspectives'|'consultants'|'applications'|'safety'|'counselor'|'understandings'|'nvc'|'roleplay'|'growth'|'person'
 type Sheet='people-support'|'people-add'|'topics'|'auth'|'share'|'tools'|'event'|'summary'|'edit-act'|'perspective'|'voice'|'account'|'delete'|'event-menu'|'discard'|'logout'|null
@@ -36,6 +37,7 @@ export default function MvpApp(){
   const[events,setEvents]=useState<EventRecord[]>([]),[selected,setSelected]=useState<string|null>(null),[domain,setDomain]=useState<Domain>('private'),[detail,setDetail]=useState<EventDetail|null>(null)
   const[view,setView]=useState<View>('relationships'),[sheet,setSheet]=useState<Sheet>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[toast,setToast]=useState('')
   const[register,setRegister]=useState(false),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[name,setName]=useState('')
+  const[replyConnectionLost,setReplyConnectionLost]=useState(false)
   const[requestId,setRequestId]=useState(clientId),[title,setTitle]=useState(''),[summary,setSummary]=useState(''),[search,setSearch]=useState(''),[relationsTab,setRelationsTab]=useState<'events'|'people'>('events')
   const[question,setQuestion]=useState(0),[share,setShare]=useState(false),[inviteLink,setInviteLink]=useState(''),[correction,setCorrection]=useState('')
   const[consultants,setConsultants]=useState<Consultant[]>([]),[consultant,setConsultant]=useState<Consultant|null>(null),[counselorApplications,setCounselorApplications]=useState<Application[]>([])
@@ -45,6 +47,7 @@ export default function MvpApp(){
   const[followups,setFollowups]=useState<Followup[]>([]),[person,setPerson]=useState<{id:string;name:string}|null>(null),[consultantNeed,setConsultantNeed]=useState('')
   const[requests]=useState(()=>({session:createRequestScope(),lists:createRequestScope(),detail:createRequestScope()}))
   const accountTrigger=useRef<HTMLButtonElement>(null),accountMenu=useRef<HTMLDivElement>(null)
+  const pendingReplies=useRef(new Set<string>())
   const actionRunning=useRef(false),viewHistory=useRef<View[]>([]),viewRef=useRef(view),backRef=useRef<()=>boolean>(()=>false)
   const[toolGroup,setToolGroup]=useState('了解自己'),[discardSheet,setDiscardSheet]=useState<Sheet>(null)
   const inviteRequestId=useRef(clientId()),applicationRequestId=useRef(clientId())
@@ -163,6 +166,18 @@ export default function MvpApp(){
     loadInvitation(token,controller.signal).catch(e=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'无法读取邀请，请重试')})
     return()=>controller.abort()
   },[user?.id])
+  useEffect(()=>{pendingReplies.current.clear()},[user?.id])
+  useEffect(()=>{
+    const latest=detail?.messages.at(-1)
+    if(latest?.role==='user')pendingReplies.current.add(String(latest.id))
+  },[detail?.messages.at(-1)?.id])
+  useEffect(()=>{
+    setReplyConnectionLost(false)
+    if(!user||view!=='chat'||detail?.messages.at(-1)?.role!=='user'||!['pending','running'].includes(detail.reply_state))return
+    let active=true
+    const timer=setInterval(()=>{if(!document.hidden)refresh().then(()=>{if(active)setReplyConnectionLost(false)}).catch(()=>{if(active)setReplyConnectionLost(true)})},2000)
+    return()=>{active=false;clearInterval(timer)}
+  },[user?.id,view,selected,domain,detail?.messages.at(-1)?.id,detail?.reply_state])
   useEffect(()=>{
     if(!user)return
     let source:EventSource|null=null,timer:ReturnType<typeof setInterval>|undefined
@@ -212,7 +227,8 @@ export default function MvpApp(){
     }else await openNewEvent('和 Reso 聊聊')
     navigate('chat',true)
   }
-  async function send(e:FormEvent){e.preventDefault();if(!selected||!detail||!draft.trim()||busy)return;await action(async()=>{await api(`/events/${selected}/messages`,{content:draft.trim(),domain,clientId:requestId});setDraft('');setRequestId(clientId());await refresh();requestAnimationFrame(()=>scroll.current?.scrollTo({top:scroll.current.scrollHeight,behavior:'smooth'}))})}
+  async function send(e:FormEvent){e.preventDefault();if(!selected||!detail||!draft.trim()||busy)return;await action(async()=>{const message=await api<ChatMessage>(`/events/${selected}/messages`,{content:draft.trim(),domain,clientId:requestId});pendingReplies.current.add(String(message.id));setDraft('');setRequestId(clientId());await refresh();requestAnimationFrame(()=>scroll.current?.scrollTo({top:scroll.current.scrollHeight,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}))})}
+  function followReply(){const element=scroll.current;if(element&&element.scrollHeight-element.scrollTop-element.clientHeight<100)element.scrollTop=element.scrollHeight}
   async function saveExercise(change:Partial<Exercise>){if(!selected)return false;return await action(async()=>{await api(`/events/${selected}/exercise`,{...exercise,...(storyDraft===null?{}:{story:storyDraft,version:storyEditor.revision}),...change},'PUT');if(storyDraft!==null)storyEditor.saved(storyEditor.revision+1);await refresh();if(change.saved||change.notes)setToast('私人练习已保存')})}
   async function saveAnswer(value:number){if(!selected)return;await action(async()=>{
     const answers=[...(detail?.questionnaire?.answers||Array(24).fill(null))];answers[question]=value
@@ -280,8 +296,8 @@ export default function MvpApp(){
     {domain==='room'&&detail?.snapshots.map((snapshot,i)=><Card key={i} title={owner?`你向${detail.members.find(member=>member.user_id===snapshot.user_id)?.name||'成员'}分享的摘要`:'向你分享的摘要'} icon={<ShieldCheck />}><p>{snapshot.content}</p><p className="fineprint">版本 {snapshot.version} · 分享于 {new Date(snapshot.granted_at).toLocaleString('zh-CN')} · 仅授权接收人可见，后续修改不自动共享</p></Card>)}
     {!detail?.messages.length&&<><Bubble>{domain==='private'?'可以从今天让你在意的一件小事说起。你想先聊聊什么？':'这里可以分别说说自己的感受。不急着得出同一个答案。'}</Bubble>{domain==='private'&&<p className="supporting-copy chat-tools-hint">需要一点思路时，可以点左下角的加号打开聊天工具。</p>}</>}
     {detail?.hasMore&&<Button secondary disabled={busy} onClick={()=>action(async()=>{const more=await api<MessagePage>(`/events/${selected}/messages?domain=${domain}&before=${detail.messages[0]?.id}`);setDetail(prev=>prev?{...prev,messages:[...more.messages,...prev.messages],hasMore:more.hasMore}:prev)})}>加载更早的消息</Button>}
-    {detail?.messages.map(message=><div key={message.id} className={message.role==='user'&&message.author_id===user?.id?'message-wrap own-message':'message-wrap'}>{domain==='room'&&message.role==='user'&&message.author_id!==user?.id&&<span className="message-author">{message.author_name}</span>}<MessageReasoning message={message}/><Bubble role={message.role==='user'&&message.author_id===user?.id?'user':message.role==='user'?'mom':'reso'}>{message.content}</Bubble>{message.card_type==='safety'&&safetyCard(true)}{message.agent_actions?.map(suggestion=><AgentSuggestion key={suggestion.id} suggestion={suggestion} eventId={selected!} userId={user!.id} busy={busy} perform={action} refresh={refresh} onOpen={method=>{if(selectedRef.current!==selected||domainRef.current!=='private')return;navigate(method==='narrative'?'exercise':method==='nvc'?'nvc':method==='roleplay'?'roleplay':suggestion.kind==='nvc'?'nvc':'memory')}}/>)}<UnderstandingPrompt message={message} busy={busy} onCheck={()=>action(async()=>{await api(`/events/${selected}/understandings`,{domain,sourceMessageId:String(message.id)});await refresh();navigate('understandings')})}/>{message.status==='error'&&<button className="text-button" disabled={busy} onClick={()=>action(async()=>{await api(`/events/${selected}/retry`,{domain});setToast('已提交重试，请稍候')})}>重试回复 <ArrowRight /></button>}</div>)}
-    {detail?.messages.at(-1)?.role==='user'&&<p className="fineprint" role="status">{detail.reply_state==='silent'?'Reso 暂时旁听，你们可以继续聊':detail.reply_state==='error'?'这轮回复暂停，可以重试或继续发送':status.agentConfigured?'Reso 正在整理你的表达…':'消息已保存，AI 回复尚未配置，可先继续记录'}</p>}
+    {detail?.messages.map(message=><div key={message.id} className={message.role==='user'&&message.author_id===user?.id?'message-wrap own-message':'message-wrap'}>{domain==='room'&&message.role==='user'&&message.author_id!==user?.id&&<span className="message-author">{message.author_name}</span>}<MessageReasoning message={message}/><Bubble role={message.role==='user'&&message.author_id===user?.id?'user':message.role==='user'?'mom':'reso'}>{message.role==='assistant'&&message.author_name==='Reso'&&message.status==='complete'?<ProgressiveReply text={message.content} animate={message.card_type!=='safety'&&!!message.in_reply_to&&pendingReplies.current.has(String(message.in_reply_to))} onStart={()=>pendingReplies.current.delete(String(message.in_reply_to))} onChunk={followReply}/>:message.content}</Bubble>{message.card_type==='safety'&&safetyCard(true)}{message.agent_actions?.map(suggestion=><AgentSuggestion key={suggestion.id} suggestion={suggestion} eventId={selected!} userId={user!.id} busy={busy} perform={action} refresh={refresh} onOpen={method=>{if(selectedRef.current!==selected||domainRef.current!=='private')return;navigate(method==='narrative'?'exercise':method==='nvc'?'nvc':method==='roleplay'?'roleplay':suggestion.kind==='nvc'?'nvc':'memory')}}/>)}<UnderstandingPrompt message={message} busy={busy} onCheck={()=>action(async()=>{await api(`/events/${selected}/understandings`,{domain,sourceMessageId:String(message.id)});await refresh();navigate('understandings')})}/>{message.status==='error'&&<button className="text-button" disabled={busy} onClick={()=>action(async()=>{await api(`/events/${selected}/retry`,{domain});setToast('已提交重试，请稍候')})}>重试回复 <ArrowRight /></button>}</div>)}
+    {detail?.messages.at(-1)?.role==='user'&&<ReplyProgress state={detail.reply_state} phase={detail.reply_progress?.phase} configured={status.agentConfigured} connectionLost={replyConnectionLost}/>}
     {detail?.reply_state==='error'&&detail.messages.at(-1)?.role==='user'&&<Button secondary disabled={busy} onClick={()=>action(async()=>{await api(`/events/${selected}/retry`,{domain});setToast('已提交重试')})}>重试回复</Button>}
   </>}
 

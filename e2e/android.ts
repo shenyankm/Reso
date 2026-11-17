@@ -38,8 +38,15 @@ export class Android {
     const pid=this.shell('shell','pidof','app.reso.local').split(' ')[0]
     assert.ok(pid,'Install and launch the debug APK before running E2E')
     this.forward=this.shell('forward','tcp:0',`localabstract:webview_devtools_remote_${pid}`)
-    const pages=await(await fetch(`http://127.0.0.1:${this.forward}/json/list`)).json()
-    const page=pages.find((p:any)=>p.type==='page'&&new URL(p.url).origin===originalOrigin)
+    let page:any
+    const deadline=Date.now()+15000
+    while(!page&&Date.now()<deadline){
+      try{
+        const pages=await(await fetch(`http://127.0.0.1:${this.forward}/json/list`,{signal:AbortSignal.timeout(1000)})).json()
+        page=pages.find((p:any)=>p.type==='page'&&new URL(p.url).origin===originalOrigin)
+      }catch{/* The native process can start before WebView's debug socket is ready. */}
+      if(!page)await new Promise(resolve=>setTimeout(resolve,200))
+    }
     assert.ok(page,'Expected the configured Reso WebView; refusing to replace an unrelated page')
     this.socket=new WebSocket(page.webSocketDebuggerUrl)
     await new Promise<void>((resolve,reject)=>{this.socket.once('open',resolve);this.socket.once('error',reject)})
@@ -155,7 +162,10 @@ export class Android {
     return [...xml.matchAll(/<node\s+([^>]+)>/g)].map(match=>Object.fromEntries([...match[1].matchAll(/([\w-]+)="([^"]*)"/g)].map(a=>[a[1],a[2].replaceAll('&amp;','&').replaceAll('&quot;','"')])))
   }
   async nativeTap(find:(node:Record<string,string>)=>boolean){
-    const nodes=await this.nativeTree(),matches=nodes.filter(find)
+    let matches=(await this.nativeTree()).filter(find)
+    const deadline=Date.now()+5000
+    while(!matches.length&&Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,200));matches=(await this.nativeTree()).filter(find)}
+    if(!matches.length)await writeFile(join(this.artifacts,`native-missing-${this.activation}.json`),JSON.stringify({nodes:await this.nativeTree(),focused:await this.eval('({tag:document.activeElement?.tagName,label:document.activeElement?.getAttribute("aria-label")})')}),{mode:0o600})
     assert.equal(matches.length,1,'Expected one native control')
     const bounds=matches[0].bounds.match(/\d+/g)!.map(Number)
     assert.ok(bounds[2]>bounds[0]&&bounds[3]>bounds[1])

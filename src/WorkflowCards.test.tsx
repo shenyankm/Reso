@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {renderToStaticMarkup} from 'react-dom/server'
-import {ExerciseProgress,ClientApplication,CounselorApplication,UnderstandingCards,UnderstandingPrompt,MessageReasoning,ShareMembers,FollowupList,FollowupForm} from './WorkflowCards'
+import {ExerciseProgress,ClientApplication,CounselorApplication,UnderstandingCards,UnderstandingPrompt,MessageReasoning,ReplyProgress,ShareMembers,FollowupList,FollowupForm} from './WorkflowCards'
 import {SaveStatus} from './components'
 import {PeopleOverview} from './PeopleOverview'
 import type {ChatMessage,Application,Understanding,Followup} from '../shared/types'
@@ -86,11 +86,15 @@ test('only important AI understandings get a check prompt, without duplicating p
   for(const change of [{},{understanding_kind:null},{understanding_kind:'summary' as const,role:'user' as const},{understanding_kind:'inference' as const,author_name:'系统'},{understanding_kind:'summary' as const,status:'error' as const},{understanding_kind:'summary' as const,card_type:'safety' as const},{understanding_kind:'summary' as const,agent_actions:[{id:'action',message_id:'1',kind:'summary' as const,value:{summary:'待核对摘要'},source_ids:['0'],status:'pending' as const,created_at:'2026-11-15T00:00:00Z'}]}])assert.equal(render(change),'')
 })
 
-test('provider reasoning is a separate accessible disclosure and is never fabricated for other messages',()=>{
-  const message:ChatMessage={id:'1',event_id:'event',author_id:null,author_name:'Reso',domain:'private',role:'assistant',content:'这是最终回复。',status:'complete',client_id:null,in_reply_to:'0',created_at:'2026-11-15T00:00:00Z',card_type:null,reasoning_content:'先区分原话与假设。<script>不得作为 HTML 执行</script>'}
+test('each assistant turn has a collapsed public summary without exposing legacy reasoning',()=>{
+  const message:ChatMessage={id:'1',event_id:'event',author_id:null,author_name:'Reso',domain:'private',role:'assistant',content:'这是最终回复。',status:'complete',client_id:null,in_reply_to:'0',created_at:'2026-11-15T00:00:00Z',card_type:null,reply_summary:'先区分原话与假设。<script>不得作为 HTML 执行</script>'}
   const render=(change:Partial<ChatMessage>)=>renderToStaticMarkup(<MessageReasoning message={{...message,...change}}/>)
-  const html=render({});assert.match(html,/思考过程/);assert.match(html,/role="region"/);assert.match(html,/tabindex="0"/);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>|这是最终回复。|<details[^>]* open/)
-  for(const change of [{reasoning_content:null},{reasoning_content:' '},{role:'user' as const},{author_name:'系统'},{status:'error' as const},{card_type:'safety' as const}])assert.equal(render(change),'')
+  const html=render({});assert.match(html,/思考摘要/);assert.match(html,/role="region"/);assert.match(html,/tabindex="0"/);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>|这是最终回复。|<details[^>]* open/)
+  assert.match(render({reply_summary:null}),/历史回复/)
+  assert.match(render({status:'error',author_name:'系统',reply_summary:null}),/尚未形成/)
+  assert.match(render({card_type:'safety'}),/思考摘要/)
+  assert.equal(render({role:'user'}),'')
+  assert.equal(render({author_name:'其他'}),'')
 })
 
 
@@ -102,4 +106,12 @@ test('people overview deduplicates people, searches shared events and never inve
   assert.ok(html.includes('最近聊到的人'));assert.ok(html.includes('今天想聊点轻松的？'));assert.ok(html.includes('我的专业支持'));assert.ok(!html.includes('已预约'));assert.ok(!html.includes('同学'))
   const filtered=renderToStaticMarkup(<PeopleOverview {...props} search="家里"/>);assert.ok(filtered.includes('小禾'));assert.ok(!filtered.includes('小雨'))
   const empty=renderToStaticMarkup(<PeopleOverview {...props} connections={[]}/>);assert.ok(empty.includes('共 0 人'));assert.ok(empty.includes('一起聊过的人会出现在这里'))
+})
+
+
+test('reply status names real phases and distinguishes interrupted transport from model work',()=>{
+  for(const phase of ['understanding','checking','composing','reviewing'] as const){const html=renderToStaticMarkup(<ReplyProgress state="running" phase={phase} configured/>);assert.match(html,/role="status"/);assert.match(html,new RegExp('data-phase="'+phase+'"'))}
+  const disconnected=renderToStaticMarkup(<ReplyProgress state="running" phase="composing" configured connectionLost/>);assert.match(disconnected,/连接暂时中断/);assert.doesNotMatch(disconnected,/正在组织回复/)
+  assert.match(renderToStaticMarkup(<ReplyProgress state="pending" configured/>),/已收到/)
+  assert.match(renderToStaticMarkup(<ReplyProgress state="error" configured/>),/可以重试/)
 })

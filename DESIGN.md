@@ -205,7 +205,9 @@ Chat tools keep a fixed 48px plus control beside the composer, independently of 
 
 Long invitation cards keep their full content height and scroll with the containing page. Dialog headers stay visible while their content scrolls, including enlarged system text and keyboard-constrained windows.
 
-Each new model reply can include a collapsed “思考过程” disclosure immediately before its final bubble. Use the existing paper, line and muted blue tokens, a 14px radius, a 48px summary target and 13px supporting text. Expanded plain text wraps and scrolls within the smaller of 320px and 45dvh; keep keyboard focus visible. Explain that model assumptions remain unconfirmed. Missing historical reasoning has no placeholder.
+Each assistant turn has a collapsed “思考摘要” disclosure immediately before its final bubble. Use the existing paper, line and muted blue tokens, a 14px radius, a 48px summary target and 13px supporting text. Expand only the short public response rationale, never raw provider reasoning. Historical replies explicitly say no summary was recorded; failed replies say no usable summary was produced. Expanded plain text wraps within the existing bounded region, with visible keyboard focus.
+
+While a reply runs, a quiet 13px status line names the actual backend phase: understanding, checking available information, composing, or reviewing. Transport failure says reconnecting rather than pretending the model is still thinking. Once validated and committed, only a newly observed reply reveals graphemes at about 33 per second. The complete text remains available to assistive technology; reduced motion, historical messages and urgent fixed safety guidance show the full text immediately. Backgrounding finishes the reveal, remounting does not replay it, and scrolling follows only while the reader stays near the bottom. No fabricated thinking delay or percentage is used.
 
 
 ### Important people overview

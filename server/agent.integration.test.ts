@@ -30,6 +30,42 @@ async function scenario(){
 }
 const plan=(ids:string[],extra:Record<string,unknown>={})=>JSON.stringify({intent:'整理私人记录',strategy:'listen',evidence_ids:ids,uncertainty:'由本人核对',needs_human:false,...extra})
 
+test('reply progress is current and scoped, summaries persist, and unvalidated text is never published',{skip},async()=>{
+  const s=await scenario(),phases:string[]=[]
+  try{
+    const source=await s.send('我今天有点委屈，想先说说，不用给建议。')
+    const notify=async(eventId:string,domain:'private'|'room')=>{
+      const d=await s.detail()
+      if(d.reply_progress){
+        assert.equal(d.reply_progress.message_id,String(source.id))
+        if(phases.at(-1)!==d.reply_progress.phase)phases.push(d.reply_progress.phase)
+        assert.equal(d.messages.at(-1).role,'user')
+      }
+      assert.ok(!JSON.stringify(d).includes('RAW_PRIVATE_REASONING'))
+      assert.equal((await s.call(s.guest.cookie,'GET',`/api/events/${s.event.id}`)).statusCode,403)
+      await s.service.notify(eventId,domain)
+    }
+    let rewrites=0
+    await processReply(s.service.database,s.job,notify,async(_prompt,json)=>json?plan([String(source.id)],{reply:'重复解释。'.repeat(60),reply_summary:'先回应你说出的委屈，暂不推动建议。',reasoning_content:'RAW_PRIVATE_REASONING'}):(rewrites++,'可以，先把让你委屈的那一刻说给我听，不急着想办法。'))
+    assert.equal(rewrites,1)
+    assert.deepEqual(phases,['understanding','composing','reviewing'])
+    const complete=await s.detail(),message=complete.messages.at(-1)
+    assert.equal(complete.reply_state,'complete');assert.equal(complete.reply_progress,null)
+    assert.ok(message.content.length<=180);assert.equal(message.reply_summary,'先回应你说出的委屈，暂不推动建议。')
+    assert.equal('reasoning_content' in message,false)
+    const page=(await s.call(s.owner.cookie,'GET',`/api/events/${s.event.id}/messages`)).json()
+    assert.equal(page.messages.at(-1).reply_summary,message.reply_summary)
+    const checkpoint=(await s.fixture.fixtures.pool.query('SELECT checkpoint FROM agent_runs WHERE response_message_id=$1',[message.id])).rows[0].checkpoint
+    assert.equal('reasoning_content' in checkpoint,false)
+    await s.fixture.fixtures.pool.query('UPDATE agent_runs SET checkpoint=$1 WHERE response_message_id=$2',[{phase:'complete',reasoning_content:'RAW_PRIVATE_REASONING'},message.id])
+    const historical=(await s.detail()).messages.at(-1)
+    assert.ok(historical.reply_summary.includes('历史回复'));assert.ok(!JSON.stringify(historical).includes('RAW_PRIVATE_REASONING'))
+    const next=await s.send('我想补充一点新的情况。')
+    await s.fixture.fixtures.pool.query("INSERT INTO agent_runs(id,event_id,domain,trigger_message_id,context_version,model,status,checkpoint) VALUES($1,$2,'private',$3,0,'synthetic','running','{\"display_phase\":\"checking\"}')",[randomUUID(),s.event.id,next.id])
+    assert.equal((await s.detail()).reply_progress,null,'A run with an old input version cannot masquerade as current work')
+  }finally{await s.close()}
+})
+
 test('scoped tools retrieve old evidence, enforce domain and actor access, and reject stale snapshots',{skip},async()=>{
   const s=await scenario()
   try{
@@ -117,9 +153,9 @@ test('message pages expose only their completed reply understanding kind and ret
     await processReply(s.service.database,s.job,s.service.notify,async()=>plan([],{reply:'可以先慢慢说，我在这里听。'}))
     let d=await s.detail();assert.equal(d.messages.at(-1).understanding_kind,null);assert.equal(d.messages[0].understanding_kind,null)
     const source=await s.send('你能先概括一下我在意的是什么吗？')
-    await processReply(s.service.database,s.job,s.service.notify,async(_prompt,_json,_signal,onReasoning)=>{onReasoning?.('应先概括用户已说出的关切，不把猜测当成事实。');return plan([String(source.id)],{understanding_kind:'summary',reply:'你在意的是自己的复习安排能先被听完，再讨论休息时间。我这样理解准确吗？'})})
-    d=await s.detail();const message=d.messages.at(-1);assert.equal(message.understanding_kind,'summary');assert.equal(message.reasoning_content,'应先概括用户已说出的关切，不把猜测当成事实。');assert.ok(!message.content.includes(message.reasoning_content));assert.equal('assessment' in message,false)
-    const page=await s.call(s.owner.cookie,'GET',`/api/events/${s.event.id}/messages?domain=private`);assert.equal(page.statusCode,200);assert.equal(page.json().messages.at(-1).understanding_kind,'summary');assert.equal(page.json().messages.at(-1).reasoning_content,message.reasoning_content);assert.equal((await s.call(s.owner.cookie,'GET',`/api/events/${s.event.id}/messages?domain=room`)).json().messages.length,0)
+    await processReply(s.service.database,s.job,s.service.notify,async()=>{return plan([String(source.id)],{understanding_kind:'summary',reply_summary:'先概括你已说出的关切，其余解释仍待核对。',reply:'你在意的是自己的复习安排能先被听完，再讨论休息时间。我这样理解准确吗？'})})
+    d=await s.detail();const message=d.messages.at(-1);assert.equal(message.understanding_kind,'summary');assert.equal(message.reply_summary,'先概括你已说出的关切，其余解释仍待核对。');assert.ok(!message.content.includes(message.reply_summary));assert.equal('reasoning_content' in message,false);assert.equal('assessment' in message,false)
+    const page=await s.call(s.owner.cookie,'GET',`/api/events/${s.event.id}/messages?domain=private`);assert.equal(page.statusCode,200);assert.equal(page.json().messages.at(-1).understanding_kind,'summary');assert.equal(page.json().messages.at(-1).reply_summary,message.reply_summary);assert.equal((await s.call(s.owner.cookie,'GET',`/api/events/${s.event.id}/messages?domain=room`)).json().messages.length,0)
     assert.equal((await s.call(s.guest.cookie,'GET',`/api/events/${s.event.id}/messages?domain=private`)).statusCode,403)
     const saved=await s.call(s.owner.cookie,'POST',`/api/events/${s.event.id}/understandings`,{domain:'private',sourceMessageId:String(message.id)});assert.equal(saved.statusCode,200)
     d=await s.detail();assert.equal(d.understandings[0].source_message_id,String(message.id));assert.equal(d.understandings[0].provenance,'model_inference')

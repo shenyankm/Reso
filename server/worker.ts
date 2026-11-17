@@ -14,6 +14,7 @@ import { assertRuntimeRole } from './database-access'
 import { verifyMigrations } from './migrations'
 import {createAgentTools} from './agent-tools'
 import type {AgentCheckpoint} from './agent'
+import type {ReplyPhase} from '../shared/reply'
 
 export async function startQueue(databaseUrl: string) {
   const queue = new PgBoss({ connectionString: databaseUrl, migrate: false, schedule: false, persistQueueStats: false, reindex: false })
@@ -43,6 +44,7 @@ export async function processReply(database: ReturnType<typeof createDatabase>, 
     const { lastUser, version, context, history,sessionState } = loaded
     const [previous]=await query<{checkpoint:AgentCheckpoint}>(sql`SELECT checkpoint FROM agent_runs WHERE event_id=${job.eventId} AND domain=${job.domain} AND trigger_message_id=${lastUser.id} AND context_version=${version} AND prompt_version=${promptVersion} AND model=${process.env.DEEPSEEK_MODEL || 'deepseek-flash'} AND checkpoint IS NOT NULL AND coalesce((checkpoint->>'method_offers')::boolean,false)=${!!job.methodOffers} ORDER BY created_at DESC LIMIT 1`)
     const runId = randomUUID()
+    let lastDisplayPhase:ReplyPhase|undefined
     await query(sql`INSERT INTO agent_runs(id,event_id,domain,context_version,model,prompt_version,trigger_message_id,status) VALUES(${runId},${job.eventId},${job.domain},${version},${process.env.DEEPSEEK_MODEL || 'deepseek-flash'},${promptVersion},${lastUser.id},'running')`)
     async function requireCurrent(tx:Parameters<typeof query>[1]){
       if(cancelled.aborted)throw new Error(lost.signal.aborted?'WORKER_CONNECTION_LOST':signal?.aborted?'WORKER_INTERRUPTED':'AGENT_TIMEOUT')
@@ -50,7 +52,11 @@ export async function processReply(database: ReturnType<typeof createDatabase>, 
       if(!fresh||(job.domain==='private'?fresh.private_version:fresh.room_version)!==version||!await createPermissions(database).hasEventAccess(job.eventId,job.actorId,job.domain,tx))throw new Error('CONTEXT_CHANGED')
     }
     try {
-      const result = await createAgent(model,cancelled,{tools:createAgentTools(database,job,version),resume:previous?.checkpoint,checkpoint:async state=>{if(cancelled.aborted)throw Error('WORKER_INTERRUPTED');await query(sql`UPDATE agent_runs SET checkpoint=${JSON.stringify(state)}::jsonb WHERE id=${runId}`)}}).invoke({ input: { domain: job.domain, context,scopeKey:`${job.domain}:${job.eventId}`,contextVersion:version,sessionState,supportsMethodOffers:!!job.methodOffers, lastMessage: lastUser.content, messageIds: history.map(m => String(m.id)),userMessageIds:history.filter(m=>m.role==='user').map(m=>String(m.id)) } })
+      const result = await createAgent(model,cancelled,{tools:createAgentTools(database,job,version),resume:previous?.checkpoint,checkpoint:async state=>{
+        if(cancelled.aborted)throw Error('WORKER_INTERRUPTED')
+        await query(sql`UPDATE agent_runs SET checkpoint=${JSON.stringify(state)}::jsonb WHERE id=${runId}`)
+        if(lastDisplayPhase!==state.display_phase){lastDisplayPhase=state.display_phase;await notify(job.eventId,job.domain)}
+      }}).invoke({ input: { domain: job.domain, context,scopeKey:`${job.domain}:${job.eventId}`,contextVersion:version,sessionState,supportsMethodOffers:!!job.methodOffers, lastMessage: lastUser.content, messageIds: history.map(m => String(m.id)),userMessageIds:history.filter(m=>m.role==='user').map(m=>String(m.id)) } })
       await db.transaction(async tx => {
         await requireCurrent(tx)
         const cardType=result.dangerous&&job.domain==='private'?'safety':null

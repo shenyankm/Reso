@@ -4,8 +4,8 @@ import type {TurnAssessment} from './agent-policy'
 
 // Planning/transport regressions use a fixed observer; behavior tests exercise both real graph stages.
 export function withObservationFixture(model:Model,overrides:Partial<TurnAssessment>={}):Model{
-  return async(prompt,json,signal,onReasoning)=>{
-    if(!prompt.startsWith(turnAssessmentPromptTag))return model(prompt,json,signal,onReasoning)
+  return async(prompt,json,signal)=>{
+    if(!prompt.startsWith(turnAssessmentPromptTag))return model(prompt,json,signal)
     signal?.throwIfAborted()
     const data=JSON.parse(prompt.slice(prompt.indexOf('INPUT_JSON\n')+11,prompt.lastIndexOf('\nEND_INPUT'))) as {lastMessage:string;latestMessageId:string|null}
     const text=data.lastMessage

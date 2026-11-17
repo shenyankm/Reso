@@ -8,6 +8,8 @@ import type {Domain} from '../../shared/types'
 import {readAgentActions} from '../agent-actions'
 import {supportsMethodOffers} from '../../shared/capabilities'
 import { readUnderstandings } from '../understandings'
+import {legacyReplySummary,replyPhases} from '../../shared/reply'
+import type {ReplyPhase} from '../../shared/reply'
 import type { ChatMessage, EventRecord, Exercise, Questionnaire,MessagePage } from '../../shared/types'
 
 export function registerEvents(app: FastifyInstance, context: RouteContext) {
@@ -17,9 +19,9 @@ export function registerEvents(app: FastifyInstance, context: RouteContext) {
   async function readMessages(id:string,domain:Domain,before?:string,methodOffers=false):Promise<MessagePage>{
     const rows=(await query<ChatMessage>(sql`SELECT * FROM messages WHERE event_id=${id} AND domain=${domain} ${before?sql`AND id<${before}`:sql``} ORDER BY id DESC LIMIT 51`)).reverse()
     const messages=rows.slice(rows.length>50?1:0),actions=domain==='private'?await readAgentActions(database,id,messages.map(m=>String(m.id))):[]
-    const runs=messages.length?await query<{response_message_id:string;kind:ChatMessage['understanding_kind'];reasoning_content:string|null}>(sql`SELECT DISTINCT ON (response_message_id) response_message_id::text,assessment->>'understanding_kind' AS kind,checkpoint->>'reasoning_content' AS reasoning_content FROM agent_runs WHERE event_id=${id} AND domain=${domain} AND status='complete' AND response_message_id IN (${sql.join(messages.map(m=>sql`${m.id}`),sql`,`)}) ORDER BY response_message_id,created_at DESC`):[]
+    const runs=messages.length?await query<{response_message_id:string;kind:ChatMessage['understanding_kind'];reply_summary:string|null}>(sql`SELECT DISTINCT ON (response_message_id) response_message_id::text,assessment->>'understanding_kind' AS kind,checkpoint->>'reply_summary' AS reply_summary FROM agent_runs WHERE event_id=${id} AND domain=${domain} AND status='complete' AND response_message_id IN (${sql.join(messages.map(m=>sql`${m.id}`),sql`,`)}) ORDER BY response_message_id,created_at DESC`):[]
     const metadata=new Map(runs.map(run=>[run.response_message_id,run]))
-    return{messages:messages.map(m=>({...m,understanding_kind:m.role==='assistant'&&m.author_name==='Reso'&&m.status==='complete'&&!m.card_type?metadata.get(String(m.id))?.kind||null:null,reasoning_content:m.role==='assistant'&&m.author_name==='Reso'&&m.status==='complete'&&!m.card_type?metadata.get(String(m.id))?.reasoning_content||null:null,agent_actions:actions.filter(a=>a.message_id===String(m.id)&&(methodOffers||a.kind!=='method'))})),hasMore:rows.length>50}
+    return{messages:messages.map(m=>({...m,understanding_kind:m.role==='assistant'&&m.author_name==='Reso'&&m.status==='complete'&&!m.card_type?metadata.get(String(m.id))?.kind||null:null,reply_summary:m.role!=='assistant'?null:m.status==='error'?'这轮回复未完成，尚未形成可用的思考摘要。':m.author_name==='Reso'?metadata.get(String(m.id))?.reply_summary?.trim()||legacyReplySummary:null,agent_actions:actions.filter(a=>a.message_id===String(m.id)&&(methodOffers||a.kind!=='method'))})),hasMore:rows.length>50}
   }
   app.get('/api/events/:id/messages',async request=>{
     const id=eventId(request),{domain,before}=messageQuery.parse(request.query)
@@ -52,6 +54,9 @@ export function registerEvents(app: FastifyInstance, context: RouteContext) {
     const { domain, before } = messageQuery.parse(request.query)
     const event = await (domain === 'private' ? requireEventOwner : requireRoomParticipant)(id, userId), owner = event.owner_id === userId
     const {messages:rows,hasMore}=await readMessages(id,domain,before,supportsMethodOffers(request.headers['x-reso-features']))
+    const last=rows.at(-1),version=domain==='private'?event.private_version:event.room_version
+    const [run]=last?.role==='user'?await query<{status:'running'|'complete'|'error';response_message_id:string|null;display_phase:ReplyPhase}>(sql`SELECT status,response_message_id,checkpoint->>'display_phase' AS display_phase FROM agent_runs WHERE event_id=${id} AND domain=${domain} AND trigger_message_id=${last.id} AND context_version=${version} ORDER BY created_at DESC LIMIT 1`):[]
+    const reply_state=last?.role!=='user'?'complete':run?.status==='complete'?(run.response_message_id?'running':'silent'):run?.status||'pending'
     const members = await query(sql`SELECT m.user_id,u.name,EXISTS(SELECT 1 FROM share_grants g WHERE g.event_id=m.event_id AND g.recipient_id=m.user_id AND g.revoked_at IS NULL) AS shared FROM members m JOIN "user" u ON u.id=m.user_id WHERE m.event_id=${id} AND m.active`)
     const snapshots = await query(sql`SELECT g.recipient_id AS user_id,s.content,s.source_version AS version,g.granted_at FROM share_grants g JOIN share_snapshots s ON s.id=g.snapshot_id JOIN members m ON m.event_id=g.event_id AND m.user_id=g.recipient_id WHERE g.event_id=${id} AND g.revoked_at IS NULL AND m.active ${owner ? sql`` : sql`AND g.recipient_id=${userId}`}`)
     const perspectives = await query(sql`SELECT p.user_id,u.name,p.text,p.confirmed,p.version FROM perspectives p JOIN "user" u ON u.id=p.user_id WHERE p.event_id=${id} AND (p.user_id=${event.owner_id} OR EXISTS(SELECT 1 FROM members m WHERE m.event_id=p.event_id AND m.user_id=p.user_id AND m.active))`)
@@ -63,7 +68,7 @@ export function registerEvents(app: FastifyInstance, context: RouteContext) {
       understandings:await readUnderstandings(database,id,domain),
       followups:owner&&domain==='private'?await query(sql`SELECT * FROM followups WHERE event_id=${id} AND user_id=${userId} ORDER BY created_at DESC`):[],
       shared_notes:domain==='room'?await query(sql`SELECT s.application_id,s.content,s.source_version FROM note_shares s JOIN applications a ON a.id=s.application_id JOIN members m ON m.event_id=a.event_id AND m.user_id=s.recipient_id WHERE a.event_id=${id} AND s.recipient_id=${userId} AND s.revoked_at IS NULL AND m.active`):[],
-      reply_state:rows.at(-1)?.role==='user'?await (async()=>{const [run]=await query<{status:'running'|'complete'|'error';response_message_id:string|null}>(sql`SELECT status,response_message_id FROM agent_runs WHERE event_id=${id} AND domain=${domain} AND trigger_message_id=${rows.at(-1)!.id} ORDER BY created_at DESC LIMIT 1`);return run?.status==='complete'&&!run.response_message_id?'silent':run?.status||'pending'})():'complete',
+      reply_state,reply_progress:reply_state==='running'&&run?.status==='running'&&replyPhases.includes(run.display_phase)?{phase:run.display_phase,message_id:String(last!.id)}:null,
     }
   })
   app.post('/api/events/:id/messages', async request => {

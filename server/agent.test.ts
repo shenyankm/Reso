@@ -158,27 +158,47 @@ test('understanding labels default to ordinary chat and do not duplicate record 
   assert.equal(repaired.assessment.understanding_kind,null)
 })
 
-test('DeepSeek requests high thinking and keeps returned reasoning separate from its answer',async t=>{
+test('DeepSeek requests high thinking but returns only the final answer',async t=>{
   const previous=process.env.DEEPSEEK_API_KEY;process.env.DEEPSEEK_API_KEY='synthetic-high-thinking-key'
   t.after(()=>{if(previous===undefined)delete process.env.DEEPSEEK_API_KEY;else process.env.DEEPSEEK_API_KEY=previous})
   let truncated=false
   t.mock.method(globalThis,'fetch',async(_url:Parameters<typeof fetch>[0],init?:RequestInit)=>{
     const body=JSON.parse(String(init?.body));assert.deepEqual(body.thinking,{type:'enabled'});assert.equal(body.reasoning_effort,'high');assert.equal(body.max_tokens,16384);assert.deepEqual(body.response_format,{type:'json_object'})
-    return new Response(JSON.stringify({choices:[{finish_reason:truncated?'length':'stop',message:{reasoning_content:'先区分用户原话和我的假设，再给出可以核对的概括。',content:'这是最终回复。'}}]}),{status:200})
+    return new Response(JSON.stringify({choices:[{finish_reason:truncated?'length':'stop',message:{reasoning_content:'RAW_PRIVATE_REASONING',content:'这是最终回复。'}}]}),{status:200})
   })
-  const reasoning:string[]=[];assert.equal(await deepseekModel('合成测试',true,undefined,text=>reasoning.push(text)),'这是最终回复。');assert.deepEqual(reasoning,['先区分用户原话和我的假设，再给出可以核对的概括。'])
+  assert.equal(await deepseekModel('合成测试',true),'这是最终回复。')
   truncated=true;await assert.rejects(deepseekModel('合成测试',true),/MODEL_TRUNCATED/)
 })
 
-test('reasoning survives a checkpoint retry without entering the final answer or repeating completed calls',async()=>{
+test('public summary survives a checkpoint retry without exposing raw reasoning or repeating completed calls',async()=>{
   let checkpoint:AgentCheckpoint|undefined,plans=0
-  await assert.rejects(createAgent(async(_prompt,json,_signal,onReasoning)=>{
+  await assert.rejects(createAgent(async(_prompt,json)=>{
     if(!json)throw Error('MODEL_HTTP_503')
-    plans++;onReasoning?.('先核对原话，再决定如何回应。');return plan()
+    plans++;return plan({reply_summary:'先关注你想被听完的需要，其余解释仍待核对。'})
   },undefined,{checkpoint:async value=>{checkpoint=value}}).invoke({input}),/MODEL_HTTP_503/)
-  assert.equal(checkpoint?.reasoning_content,'先核对原话，再决定如何回应。')
-  const result=await createAgent(async(_prompt,json,_signal,onReasoning)=>{assert.equal(json,false);onReasoning?.('尊重用户的纠正，把是否继续表达留给本人。');return '可以先把你希望被听完的那句话写下来。'},undefined,{resume:checkpoint}).invoke({input})
-  assert.equal(plans,1);assert.equal(result.progress.reasoning_content,'先核对原话，再决定如何回应。\n\n尊重用户的纠正，把是否继续表达留给本人。');assert.equal(result.reply,'可以先把你希望被听完的那句话写下来。')
-  const cached=await createAgent(async()=>{throw Error('must not regenerate')},undefined,{resume:result.progress}).invoke({input});assert.equal(cached.progress.reasoning_content,result.progress.reasoning_content)
-  const safety=await createAgent(async()=>{throw Error('must not invoke model for safety')},undefined,{resume:result.progress}).invoke({input:{...input,lastMessage:'我不想活了'}});assert.equal(safety.progress.reasoning_content,'')
+  const old={...checkpoint,reasoning_content:'RAW_PRIVATE_REASONING'}
+  const result=await createAgent(async(_prompt,json)=>{assert.equal(json,false);return '可以先把你希望被听完的那句话写下来。'},undefined,{resume:old}).invoke({input})
+  assert.equal(plans,1);assert.equal(result.progress.reply_summary,'先关注你想被听完的需要，其余解释仍待核对。');assert.equal(result.reply,'可以先把你希望被听完的那句话写下来。')
+  assert.ok(!JSON.stringify(result).includes('RAW_PRIVATE_REASONING'));assert.equal('reasoning_content' in result.progress,false)
+  const cached=await createAgent(async()=>{throw Error('must not regenerate')},undefined,{resume:result.progress}).invoke({input});assert.equal(cached.progress.reply_summary,result.progress.reply_summary)
+  const safety=await createAgent(async()=>{throw Error('must not invoke model for safety')},undefined,{resume:result.progress}).invoke({input:{...input,lastMessage:'我不想活了'}});assert.ok(safety.progress.reply_summary.includes('优先关注安全'))
+})
+
+test('long replies get one bounded rewrite and are never silently truncated',async()=>{
+  let repairs=0
+  const result=await createAgent(async(prompt,json)=>json?plan({reply:'重复的解释。'.repeat(50)}):(repairs++,assert.ok(prompt.includes('最多180字')),'你只是想先被听完，我们先不急着想办法。')).invoke({input})
+  assert.equal(repairs,1);assert.equal(result.reply,'你只是想先被听完，我们先不急着想办法。')
+  assert.throws(()=>validateReply('长'.repeat(181)))
+  await assert.rejects(createAgent(async(_prompt,json)=>json?plan({reply:'长'.repeat(181)}):'长'.repeat(181)).invoke({input}))
+})
+
+test('phase checkpoints describe actual work and every completed reply has a bounded public summary',async()=>{
+  const phases:string[]=[];let plans=0
+  const result=await createAgent(async(_prompt,json)=>json?plan({tools:plans++?[]:[{name:'practice_guide',kind:'nvc'}],reply:plans>1?'我们先从你愿意表达的一句话开始。':''}):'我们先从你愿意表达的一句话开始。',undefined,{tools:tool,checkpoint:async value=>{if(phases.at(-1)!==value.display_phase)phases.push(value.display_phase)}}).invoke({input})
+  assert.deepEqual(phases,['understanding','composing','checking','composing','reviewing'])
+  assert.ok(result.progress.reply_summary.length>0&&result.progress.reply_summary.length<=120)
+  for(const summary of ['内部推理：RAW_PRIVATE_REASONING','<think>RAW_PRIVATE_REASONING</think>','我已经帮你分享了摘要。','长'.repeat(121)]){
+    const fallback=await createAgent(async()=>plan({reply:'这轮先听你说。',reply_summary:summary})).invoke({input})
+    assert.ok(!fallback.progress.reply_summary.includes('RAW_PRIVATE_REASONING'));assert.notEqual(fallback.progress.reply_summary,summary)
+  }
 })

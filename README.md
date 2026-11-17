@@ -114,11 +114,14 @@ npm test
 npm run test:integration
 npm run build
 npm run test:m1:isolated
+npm run test:chat:isolated
 ```
 
 集成测试在同一 PostgreSQL 实例创建随机命名的隔离数据库，验证多账号权限、分享范围、Agent 上下文、队列事务与连接中断恢复，结束后删除对应测试库。故障注入只针对隔离库。
 
 `test:m1:isolated` 另起 PostgreSQL 17 临时容器，使用 tmpfs、随机本机端口和随机身份；需要 Docker、uv 及 Node.js。它不加载 `.env`、不接受任意目标 URL、不启动现有数据库容器。验证后只清理本轮临时库、角色和容器，私有报告和加密的合成数据备份留在 `.data/m1-verification/`。`db:migrate` 仍只安装 `0001–0007`；不要手工把累计草案依次执行。
+
+聊天体验支持短回复、真实阶段状态、校验后的正文渐进显示及每轮可展开摘要，见[验收记录](docs/chat-response-acceptance.md)。`test:chat:isolated` 复用同一临时集群保护；加 `-- --app` 验证已启动模拟器中的本机调试包，加 `-- --app --live` 另验证真实 DeepSeek（只读取并传入模型凭据，发送合成对话）。这些命令不连接现有业务库，也不部署线上服务。
 
 测试建库使用迁移连接，业务请求及回复处理使用独立受限账号。测试会清理本次创建的库和角色，不修改正式账号。`npm run dev` 的 API/Worker 启动器会剔除迁移连接和管理员密码；生产部署应只向运行容器提供运行凭据，不挂载含管理员凭据的开发 `.env`。pg-boss 在运行时保留任务监督和重试，关闭自动迁移、建队列、统计分区创建和自动重建索引；队列初始化由迁移命令完成。
 

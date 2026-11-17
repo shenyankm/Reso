@@ -28,7 +28,7 @@ export async function isolatedM1Target() {
   return { run, containerId: id, url, evidenceDirectory: resolve('.data/m1-verification', run) }
 }
 
-async function child(files: string[], env: NodeJS.ProcessEnv) {
+export async function isolatedTests(files: string[], env: NodeJS.ProcessEnv) {
   await new Promise<void>((done, reject) => {
     const process = spawn(globalThis.process.execPath, ['--import', 'tsx', '--test', '--test-concurrency=1', ...files], { env, stdio: 'inherit' })
     process.once('error', reject)
@@ -36,14 +36,13 @@ async function child(files: string[], env: NodeJS.ProcessEnv) {
   })
 }
 
-async function main() {
+export async function withIsolatedPostgres(check:(context:{run:string;directory:string;env:NodeJS.ProcessEnv;url:string})=>Promise<void>) {
   const run = randomBytes(8).toString('hex'), name = `reso-m1-verify-${run}`
   const directory = resolve('.data/m1-verification', run), envFile = resolve(directory, 'postgres.env')
   await mkdir(directory, { recursive: true, mode: 0o700 })
   const password = randomBytes(32).toString('hex')
   await writeFile(envFile, `POSTGRES_USER=m1_verify\nPOSTGRES_DB=postgres\nPOSTGRES_PASSWORD=${password}\n`, { mode: 0o600 })
   let id: string | undefined
-  const started = Date.now()
   try {
     try { docker(['image', 'inspect', 'postgres:17-alpine']) }
     catch { execFileSync('docker', ['pull', 'postgres:17-alpine'], { stdio: 'inherit' }) }
@@ -68,13 +67,7 @@ async function main() {
     const env: NodeJS.ProcessEnv = Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'SystemRoot'].filter(k => process.env[k]).map(k => [k, process.env[k]]))
     Object.assign(env, { RESO_M1_VERIFY_RUN: run, RESO_M1_VERIFY_CONTAINER: id, RESO_M1_VERIFY_URL: url })
     console.log(`Verifying in disposable PostgreSQL container ${name}; no persistent volumes or business connections`)
-    await child(['server/m1.integration.test.ts'], env)
-    execFileSync('uv', ['run', 'scripts/check-database-design.py', '--m1-imports', resolve(directory, 'imported-record-json.json')], { stdio: 'inherit' })
-    const legacy = (await readdir('server')).filter(n => n.endsWith('.integration.test.ts') && n !== 'm1.integration.test.ts').map(n => 'server/' + n)
-    await child(legacy, { ...env, DATABASE_URL: url, MIGRATION_DATABASE_URL: url, PUBLIC_ORIGIN: 'http://localhost:5173' })
-    const result = JSON.parse(await readFile(resolve(directory, 'results.json'), 'utf8'))
-    await writeFile(resolve(directory, 'results.json'), JSON.stringify({ ...result, run_id: run, imported_json_contracts: 'passed', legacy_integration_suite: 'passed', duration_ms: Date.now() - started, persistent_volumes: false, business_connections: 0 }, null, 2) + '\n', { mode: 0o600 })
-    console.log(`M1 verification passed; redacted evidence: .data/m1-verification/${run}/results.json`)
+    await check({run,directory,env,url})
   } finally {
     if (id) {
       const container = JSON.parse(docker(['inspect', id]))[0]
@@ -83,6 +76,19 @@ async function main() {
     }
     await unlink(envFile)
   }
+}
+
+async function main() {
+  const started=Date.now()
+  await withIsolatedPostgres(async({run,directory,env,url})=>{
+    await isolatedTests(['server/m1.integration.test.ts'], env)
+    execFileSync('uv', ['run', 'scripts/check-database-design.py', '--m1-imports', resolve(directory, 'imported-record-json.json')], { stdio: 'inherit' })
+    const legacy = (await readdir('server')).filter(n => n.endsWith('.integration.test.ts') && n !== 'm1.integration.test.ts').map(n => 'server/' + n)
+    await isolatedTests(legacy, { ...env, DATABASE_URL: url, MIGRATION_DATABASE_URL: url, PUBLIC_ORIGIN: 'http://localhost:5173' })
+    const result = JSON.parse(await readFile(resolve(directory, 'results.json'), 'utf8'))
+    await writeFile(resolve(directory, 'results.json'), JSON.stringify({ ...result, run_id: run, imported_json_contracts: 'passed', legacy_integration_suite: 'passed', duration_ms: Date.now() - started, persistent_volumes: false, business_connections: 0 }, null, 2) + '\n', { mode: 0o600 })
+    console.log(`M1 verification passed; redacted evidence: .data/m1-verification/${run}/results.json`)
+  })
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

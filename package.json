@@ -29,7 +29,8 @@
     "eval:agent": "node --env-file=.env --import tsx scripts/evaluate-agent.ts",
     "benchmark:agent": "node --env-file=.env --import tsx scripts/benchmark-agent.ts",
     "eval:wang": "node --env-file=.env --import tsx scripts/evaluate-wang.ts",
-    "test:m1:isolated": "node --import tsx scripts/verify-m1.ts"
+    "test:m1:isolated": "node --import tsx scripts/verify-m1.ts",
+    "test:chat:isolated": "node --import tsx scripts/verify-chat.ts"
   },
   "dependencies": {
     "@fastify/multipart": "^10.1.8",

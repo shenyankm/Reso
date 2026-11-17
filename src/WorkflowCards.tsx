@@ -4,14 +4,22 @@ import {acts} from './demo'
 import {api,clientId} from './api'
 import {useDraft} from './drafts'
 import type {ChatMessage,Application,Exercise,Followup,Member,Understanding} from '../shared/types'
+import {legacyReplySummary,replyPhaseLabels} from '../shared/reply'
+import type {ReplyPhase} from '../shared/reply'
 
 type Actions={busy:boolean;perform:(task:()=>Promise<void>)=>Promise<boolean>;refresh:()=>Promise<void>}
 export const applicationLabel=(value:string)=>({pending:'待处理',accepted:'已接单 · 待协商时间',rejected:'暂未接受',cancelled:'已取消',proposed:'时间提议 · 待你确认',scheduled:'双方已确认时间',completed:'已完成'} as Record<string,string>)[value]||value
 const date=(value:string)=>new Date(value).toLocaleString('zh-CN')
 
 export function MessageReasoning({message}:{message:ChatMessage}){
-  if(message.role!=='assistant'||message.author_name!=='Reso'||message.status!=='complete'||message.card_type||!message.reasoning_content?.trim())return null
-  return <details className="message-reasoning"><summary>思考过程</summary><p className="fineprint">模型推理可能包含未核实的假设，不代表已确认事实。</p><div className="reasoning-content" tabIndex={0} role="region" aria-label="思考过程内容">{message.reasoning_content}</div></details>
+  if(message.role!=='assistant'||message.author_name!=='Reso'&&message.status!=='error')return null
+  const summary=message.reply_summary?.trim()||(message.status==='error'?'这轮回复未完成，尚未形成可用的思考摘要。':legacyReplySummary)
+  return <details className="message-reasoning"><summary>思考摘要</summary><div className="reasoning-content" tabIndex={0} role="region" aria-label="本轮思考摘要">{summary}</div></details>
+}
+
+export function ReplyProgress({state,phase,configured,connectionLost=false}:{state:string;phase?:ReplyPhase;configured:boolean;connectionLost?:boolean}){
+  const label=connectionLost?'连接暂时中断，消息已保存，正在重连…':!configured?'消息已保存，AI 回复尚未配置，可先继续记录':state==='silent'?'Reso 暂时旁听，你们可以继续聊':state==='error'?'这轮回复暂停，可以重试或继续发送':state==='pending'?'已收到，准备回复…':phase?replyPhaseLabels[phase]:'正在处理你的消息…'
+  return <p className="reply-progress" role="status" aria-live="polite" data-phase={connectionLost?'reconnecting':state==='running'?phase:state}>{label}</p>
 }
 
 export function UnderstandingPrompt({message,busy,onCheck}:{message:ChatMessage;busy:boolean;onCheck:()=>void}){
