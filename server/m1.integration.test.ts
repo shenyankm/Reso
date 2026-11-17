@@ -385,7 +385,15 @@ test('M1 isolated migration, backfill, recovery and restricted-role rehearsal', 
     await writeFile(target.evidenceDirectory + '/results.json', JSON.stringify({ scenarios, ...evidence, database_version: (await pool.query('SHOW server_version')).rows[0].server_version, existing_migrations: 7, opt_in_migrations: 2 }, null, 2) + '\n', { mode: 0o600 })
   } finally {
     await Promise.all(pools.map(p => p.end()))
-    for (const db of databases.reverse()) await admin.query(`DROP DATABASE ${escapeIdentifier(db)} WITH (FORCE)`)
+    for (const db of databases.reverse()) {
+      // Pool shutdown can precede PostgreSQL observing socket closure; do not kill closing clients.
+      for (let attempt=0;attempt<250;attempt++) {
+        if (!(await admin.query('SELECT 1 FROM pg_stat_activity WHERE datname=$1',[db])).rowCount) break
+        await new Promise(resolve=>setTimeout(resolve,20))
+      }
+      assert.equal((await admin.query('SELECT 1 FROM pg_stat_activity WHERE datname=$1',[db])).rowCount,0,'All isolated database clients must close before teardown')
+      await admin.query(`DROP DATABASE ${escapeIdentifier(db)}`)
+    }
     for (const role of roles) await admin.query(`DROP ROLE IF EXISTS ${escapeIdentifier(role)}`)
     await admin.end()
   }
