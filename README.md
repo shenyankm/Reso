@@ -49,6 +49,26 @@ npm run android:install -- emulator-5554
 
 APK 位于 `.data/android/Reso-local-debug.apk`。该包通过 ADB 转发连接本机 Web/API，需要开发电脑服务持续运行。构建、验收结果和发布边界见 [Android 说明](docs/android.md)。
 
+## 离线体验
+
+从欢迎页点「体验 Reso」，或打开 `/?roadshow=1`。跟随当前角色的对话手动输入消息。完整流程覆盖 STEP 01–32、04-A 和 25-A，最后在「我的关系」查看事件、妈妈的关系详情、已保存故事和专业支持。
+
+下一轮需要发消息时，先看完 Reso 的回复，再收起本轮的决策摘要。输入框随后出现。
+
+演示复用研究参考问卷题本，发现卡采用预设结果。聊天、决策摘要、双方同意、邀请、故事保存与咨询申请都在当前演示内模拟。从 Android 最近任务中结束 Reso 后重新打开，可从头体验。
+
+Android ARM64 路演包内置页面和素材，无需启动 Web、API 或数据库。离线体验包与普通 Reso 可并排安装，体验包的 Android 包名为 `app.reso.local.roadshow`。
+
+双机体验时，两部 Android 手机安装同一 APK 并连接同一个 Wi-Fi。孩子端在邀请确认页选择「连接妈妈的手机」，妈妈端从欢迎页选择「加入三方会谈」，输入配对码。轮到妈妈时，由妈妈端手动输入并发送，孩子端收到后继续。单机体验时，可在等待处点「预览妈妈的消息」。
+
+```sh
+npm run android:build:roadshow
+npm run android:install:roadshow -- emulator-5554
+npm run test:e2e:roadshow
+```
+
+路演 APK 输出至 `.data/android/Reso-roadshow-debug.apk`。
+
 ## 配置模型和语音
 
 在项目 `.env` 填写：

@@ -166,7 +166,7 @@ export default function App() {
   return <>
     <div className={`app ${isWelcome ? 'welcome-app' : ''}`}>
       {isWelcome ? <main className="welcome-scroll">
-        <button className="preview-label" onClick={() => setSheet('scenes')}>界面预览 <MoreHorizontal size={16} /></button>
+        <div className="preview-entry"><a className="text-button" href="/?roadshow=1">体验 Reso</a><button className="preview-label" onClick={() => setSheet('scenes')}>界面预览 <MoreHorizontal size={16} /></button></div>
         <section className="welcome-hero"><div className="welcome-copy"><h1>你好，<br />我是 Reso</h1><h2>AI 关系理解与沟通引导者</h2><p>我们可以从一件你在意的小事开始，<br />慢慢理清发生了什么。</p></div><img src={asset('reso-welcome')} alt="Reso 抱着爱心，向你招手" /></section>
         <section className="privacy-highlight"><div className="feature-icon blue"><ShieldCheck /></div><div><p>先让你安心</p><h2>你的对话默认私密</h2><span>你的信息只在获得授权的范围内使用。</span></div><Sparkles className="tiny-sparkle" /></section>
         <section className="welcome-promises">{[{ icon: <UsersRound />, title: '分享内容由你决定', text: '你可以选择分享什么，也可以随时停止。', color: 'purple' }, { icon: <HandHeart />, title: '聊什么、说多少，按你的节奏来', text: '慢慢来，随时都可以暂停。', color: 'green' }, { icon: <MessageCircle />, title: '有些事，也可以和咨询师聊聊', text: '如果你愿意，我们可以一起了解专业支持。', color: 'pink' }].map(item => <div className="promise" key={item.title}><div className={`feature-icon ${item.color}`}>{item.icon}</div><div><h2>{item.title}</h2><p>{item.text}</p></div></div>)}</section>

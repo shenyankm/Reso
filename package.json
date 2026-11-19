@@ -24,13 +24,16 @@
     "android:install": "node scripts/android.mjs install",
     "android:build:server": "node scripts/android.mjs build-server",
     "android:install:server": "node scripts/android.mjs install-server",
+    "android:build:roadshow": "node scripts/android.mjs build-roadshow",
+    "android:install:roadshow": "node scripts/android.mjs install-roadshow",
     "test:e2e": "npm run build && node --env-file=.env --import tsx --test --test-concurrency=1 e2e/android.test.ts e2e/export.test.ts e2e/agent.test.ts e2e/profile.test.ts",
     "test:e2e:live": "node --env-file=.env --import tsx --test e2e/live.test.ts",
     "eval:agent": "node --env-file=.env --import tsx scripts/evaluate-agent.ts",
     "benchmark:agent": "node --env-file=.env --import tsx scripts/benchmark-agent.ts",
     "eval:wang": "node --env-file=.env --import tsx scripts/evaluate-wang.ts",
     "test:m1:isolated": "node --import tsx scripts/verify-m1.ts",
-    "test:chat:isolated": "node --import tsx scripts/verify-chat.ts"
+    "test:chat:isolated": "node --import tsx scripts/verify-chat.ts",
+    "test:e2e:roadshow": "node --import tsx --test e2e/roadshow.test.ts"
   },
   "dependencies": {
     "@fastify/multipart": "^10.1.8",

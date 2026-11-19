@@ -1,10 +1,11 @@
 import {useEffect,useMemo,useRef,useState} from 'react'
 
-export function ProgressiveReply({text,animate,onStart,onChunk}:{text:string;animate:boolean;onStart:()=>void;onChunk:()=>void}){
+export function ProgressiveReply({text,animate,onStart,onChunk,onComplete}:{text:string;animate:boolean;onStart:()=>void;onChunk:()=>void;onComplete?:()=>void}){
   const characters=useMemo(()=>Array.from(new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(text),part=>part.segment),[text])
   const [play]=useState(()=>animate&&typeof window!=='undefined'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [length,setLength]=useState(()=>play?1:characters.length)
-  const callbacks=useRef({onStart,onChunk});callbacks.current={onStart,onChunk}
+  const callbacks=useRef({onStart,onChunk,onComplete});callbacks.current={onStart,onChunk,onComplete}
+  const completed=useRef(false)
   useEffect(()=>{
     callbacks.current.onStart()
     if(!play)return
@@ -22,6 +23,11 @@ export function ProgressiveReply({text,animate,onStart,onChunk}:{text:string;ani
     return()=>{cancelAnimationFrame(frame);preference.removeEventListener('change',changed);document.removeEventListener('visibilitychange',changed)}
   },[play,characters])
   useEffect(()=>{if(play)callbacks.current.onChunk()},[play,length])
+  useEffect(()=>{
+    if(length<characters.length||completed.current)return
+    completed.current=true
+    callbacks.current.onComplete?.()
+  },[length,characters.length])
   return <span className="progressive-reply" data-revealing={length<characters.length}>
     <span aria-hidden="true" className="reply-visible">{characters.slice(0,length).join('')}</span>
     <span className="sr-only">{text}</span>

@@ -30,12 +30,14 @@ export class Android {
   fault:{path:string;method:string}|null=null
   constructor(public artifacts:string){}
   shell(...args:string[]){return execFileSync(this.adb,['-s',this.serial,...args],{encoding:'utf8',maxBuffer:20_000_000}).trim()}
-  async connect(){
+  async connect({roadshow=false}:{roadshow?:boolean}={}){
     await mkdir(this.artifacts,{recursive:true,mode:0o700})
     assert.equal(this.shell('get-state'),'device')
-    this.reverse=this.shell('reverse','--list').split('\n').find(line=>line.includes('tcp:5189 '))?.trim().split(/\s+/).at(-1)||''
-    assert.equal(this.reverse,'','E2E port 5189 is already in use; refusing to replace another mapping')
-    const pid=this.shell('shell','pidof','app.reso.local').split(' ')[0]
+    if(!roadshow){
+      this.reverse=this.shell('reverse','--list').split('\n').find(line=>line.includes('tcp:5189 '))?.trim().split(/\s+/).at(-1)||''
+      assert.equal(this.reverse,'','E2E port 5189 is already in use; refusing to replace another mapping')
+    }
+    const pid=this.shell('shell','pidof',roadshow?'app.reso.local.roadshow':'app.reso.local').split(' ')[0]
     assert.ok(pid,'Install and launch the debug APK before running E2E')
     this.forward=this.shell('forward','tcp:0',`localabstract:webview_devtools_remote_${pid}`)
     let page:any
@@ -43,7 +45,7 @@ export class Android {
     while(!page&&Date.now()<deadline){
       try{
         const pages=await(await fetch(`http://127.0.0.1:${this.forward}/json/list`,{signal:AbortSignal.timeout(1000)})).json()
-        page=pages.find((p:any)=>p.type==='page'&&new URL(p.url).origin===originalOrigin)
+        page=pages.find((p:any)=>p.type==='page'&&(roadshow?new URL(p.url).hostname==='tauri.localhost':new URL(p.url).origin===originalOrigin))
       }catch{/* The native process can start before WebView's debug socket is ready. */}
       if(!page)await new Promise(resolve=>setTimeout(resolve,200))
     }
@@ -73,6 +75,7 @@ export class Android {
     })
     this.socket.on('close',()=>{for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(Error('WebView disconnected'))}this.pending.clear()})
     await this.call('Runtime.enable');await this.call('Network.enable');await this.call('Network.setCacheDisabled',{cacheDisabled:true})
+    if(roadshow)return
     const state=await this.eval('({local:{...localStorage},session:{...sessionStorage},href:location.href})')
     const cookies=(await this.call('Network.getCookies',{urls:[originalOrigin]})).cookies
     this.backup={...state,cookies}

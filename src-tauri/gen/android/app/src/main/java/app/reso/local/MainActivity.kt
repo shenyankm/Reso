@@ -1,5 +1,8 @@
 package app.reso.local
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebView
@@ -11,12 +14,22 @@ import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import org.json.JSONObject
 import java.util.UUID
+import java.util.concurrent.Executors
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.roundToInt
 
 class MainActivity : TauriActivity() {
+  private val meeting = MeetingLink()
+  private val meetingWorker = Executors.newSingleThreadExecutor()
+  private var pendingMeetingPermission: Pair<JSONObject, JavaScriptReplyProxy>? = null
+  private val localNetworkPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    val (request, reply) = pendingMeetingPermission ?: return@registerForActivityResult
+    pendingMeetingPermission = null
+    if (granted) runMeeting(request, reply)
+    else sendMeetingReply(request, reply, JSONObject().put("error", "请允许本地网络访问后再连接两台手机"))
+  }
   private data class PendingExport(val bytes: ByteArray, val reply: JavaScriptReplyProxy)
   private var pendingExport: PendingExport? = null
   private val exportFile = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -40,6 +53,32 @@ class MainActivity : TauriActivity() {
     runCatching { pending.reply.postMessage("{\"status\":\"$status\"}") }
   }
 
+  private fun sendMeetingReply(request: JSONObject, reply: JavaScriptReplyProxy, result: JSONObject) {
+    result.put("id", request.optInt("id", -1))
+    runOnUiThread { runCatching { reply.postMessage(result.toString()) } }
+  }
+
+  private fun runMeeting(request: JSONObject, reply: JavaScriptReplyProxy) {
+    meetingWorker.execute {
+      val result = runCatching { meeting.request(request) }.getOrElse {
+        JSONObject().put("error", "连接未完成，请检查两台设备的 Wi-Fi 和配对码")
+      }
+      sendMeetingReply(request, reply, result)
+    }
+  }
+
+  private fun receiveMeeting(request: JSONObject, reply: JavaScriptReplyProxy) {
+    val action = request.optString("action")
+    val needsNetwork = action != "publish" && action != "close"
+    if (needsNetwork && Build.VERSION.SDK_INT >= 37 &&
+      checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) != PackageManager.PERMISSION_GRANTED) {
+      if ((action == "open" || action == "connect") && pendingMeetingPermission == null) {
+        pendingMeetingPermission = request to reply
+        localNetworkPermission.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+      } else sendMeetingReply(request, reply, JSONObject().put("error", "请在系统设置中允许访问本地网络"))
+    } else runMeeting(request, reply)
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
@@ -56,6 +95,13 @@ class MainActivity : TauriActivity() {
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
     if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+      if (BuildConfig.APPLICATION_ID == "app.reso.local.roadshow") {
+        WebViewCompat.addWebMessageListener(webView, "ResoMeeting", setOf("http://tauri.localhost", "https://tauri.localhost")) { _, message, _, main, reply ->
+          val input = message.data?.takeIf { main && it.length <= 1_024 }
+          val request = input?.let { runCatching { JSONObject(it) }.getOrNull() }
+          if (request != null) runOnUiThread { receiveMeeting(request, reply) }
+        }
+      }
       // E2E uses a separate origin so it never replaces the user service mapping.
       val exportOrigins = mutableSetOf("http://localhost:5173", "https://openwook.cloud")
       if (BuildConfig.DEBUG) exportOrigins.add("http://127.0.0.1:5189")
@@ -88,5 +134,11 @@ class MainActivity : TauriActivity() {
         }
       }
     })
+  }
+
+  override fun onDestroy() {
+    meetingWorker.shutdownNow()
+    meeting.close()
+    super.onDestroy()
   }
 }

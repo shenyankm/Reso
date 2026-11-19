@@ -13,18 +13,22 @@ val tauriProperties = Properties().apply {
         propFile.inputStream().use { load(it) }
     }
 }
+val roadshow = System.getenv("RESO_ROADSHOW_APK") == "1"
 
 android {
     compileSdk = 37
     namespace = "app.reso.local"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "app.reso.local"
+        applicationId = if (roadshow) "app.reso.local.roadshow" else "app.reso.local"
+        manifestPlaceholders["appName"] = "@string/app_name"
+        manifestPlaceholders["activityTitle"] = "@string/main_activity_title"
         minSdk = 24
         targetSdk = 37
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
+    if (roadshow) sourceSets.getByName("debug").manifest.srcFile("src/roadshow/AndroidManifest.xml")
     buildTypes {
         getByName("debug") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
