@@ -30,6 +30,16 @@
       "checksum": "a3d817e67eb57484d09c711a95591c8c47f1bafe831f4b4b6cc0b9e27af109b4"
     }
   ],
+  "runtime_migrations_after_baseline": [
+    {
+      "name": "0008_room_topics.sql",
+      "checksum": "68d87ead9472f3fda39f81af97cd2891952a1c434977208e776fd15d6bca0690"
+    },
+    {
+      "name": "0009_online_parity.sql",
+      "checksum": "495156d62ec7758190efbedb075b195b954fb773fb67d4a0a7683202b5dd2635"
+    }
+  ],
   "baseline_columns": {
     "agent_actions": [
       "id",

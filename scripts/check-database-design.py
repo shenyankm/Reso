@@ -917,10 +917,12 @@ def check(write=False):
         assert relation['on_delete'] in ('NO ACTION', 'RESTRICT')
         if relation['deferrable']:
             assert relation['on_delete'] == 'NO ACTION', 'RESTRICT cannot defer a cyclic deletion'
-    for migration in model['baseline_migrations']:
-        path = ROOT / 'server/migrations' / migration['name']
+    directory = ROOT / 'server/migrations'
+    migrations = model['baseline_migrations'] + model['runtime_migrations_after_baseline']
+    for migration in migrations:
+        path = directory / migration['name']
         assert hashlib.sha256(path.read_bytes()).hexdigest() == migration['checksum'], path
-    assert {p.name for p in (ROOT / 'server/migrations').glob('*.sql')} == {m['name'] for m in model['baseline_migrations']}, 'migration files changed'
+    assert {p.name for p in directory.glob('*.sql')} == {m['name'] for m in migrations}, 'migration files changed'
     expected_ids = {f'{g}{i:02}' for g, count in dict(A=8, B=7, C=9, D=7, E=8, F=6, G=9, H=10).items() for i in range(1, count + 1)}
     assert set(model['coverage']) == expected_ids
     external = {'user', 'session', 'account', 'verification', 'schema_migrations', 'pgboss'}
@@ -1026,7 +1028,8 @@ def check(write=False):
              'legacy_json_fields': len(bundle['x-legacy-bindings']), 'json_example_checks': json_checks,
              'semantic_example_checks': len(examples['semantic_cases']), 'coverage_items': len(expected_ids),
              'new_by_phase': dict(collections.Counter(t['phase'] for t in tables.values() if t['mode'] == '新增')),
-             'local_links': links, 'migration_files_unchanged': len(model['baseline_migrations'])}
+             'local_links': links, 'migration_files_unchanged': len(model['baseline_migrations']),
+             'later_runtime_migrations_checked': len(model['runtime_migrations_after_baseline'])}
     print(json.dumps(stats, ensure_ascii=False, indent=2))
 
 
