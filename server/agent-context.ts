@@ -43,6 +43,7 @@ export async function loadAgentContext(database: Database, job: ReplyJob) {
   let event:EventRecord
   try { event=await (job.domain==='private'?permissions.requireEventOwner:permissions.requireRoomParticipant)(job.eventId,job.actorId) }
   catch(error){if(error instanceof HttpError&&(error.statusCode===403||error.statusCode===404))return;throw error}
+  if(job.domain==='room'&&event.room_closed_at)return
   const history = (await query<ChatMessage>(sql`SELECT * FROM messages WHERE event_id=${job.eventId} AND domain=${job.domain} AND status='complete' ORDER BY id DESC LIMIT 60`)).reverse()
   const lastUser = history.filter(m => m.role === 'user').at(-1)
   if (!lastUser) return

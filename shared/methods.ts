@@ -6,6 +6,7 @@ const common={version:1,source,status:'product_reference',requires_user_choice:t
 
 export const methodCards={
   narrative:{...common,method_id:'reso-narrative-v1',kind:'narrative',title:methodLabels.narrative,
+    reference_framework:'叙事取向（产品方法卡参考）',
     goal:'从一次具体经历里区分事件、评价和对自己的理解，保存本人认可的故事。',
     trigger_signals:['被单一负面评价困住','把一次表现解释为整个人的价值','愿意回看具体经历'],
     contraindications:['当前安全需要核实','情绪过强只想倾诉','本人拒绝或不想回忆'],

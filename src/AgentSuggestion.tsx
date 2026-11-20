@@ -1,4 +1,4 @@
-import {Button,SaveStatus} from './components'
+import {Button,DisclosureSummary,SaveStatus} from './components'
 import {api} from './api'
 import {useDraft} from './drafts'
 import type {AgentAction} from '../shared/agent'
@@ -34,8 +34,8 @@ function RecordSuggestion({suggestion,eventId,userId,busy,perform,refresh,onOpen
   if(suggestion.status==='dismissed')return <p className="supporting-copy">已略过这份整理建议</p>
   const stale=suggestion.status==='stale'
   const empty=Object.values(draft.values).every(v=>!v.trim())
-  return <section className="agent-suggestion"><details><summary>核对{labels[suggestion.kind]}建议</summary>{stale&&<p role="status">对话或记录已有更新，这份建议不能直接保存。你修改的文字仍保留，可请 Reso 按最新内容重新整理。</p>}<p className="supporting-copy">{suggestion.kind==='summary'?'保存后更新私人摘要，不会更新已经分享的版本。':suggestion.kind==='nvc'?'保存后更新这件事的表达练习，仅本人可见。':'确认后新增一条私人回访记录，不会自动发送提醒。'}</p>
-    {!!suggestion.sources?.length&&<details><summary>参考的原话</summary>{suggestion.sources.map((s,i)=><blockquote key={i}>{s.content}</blockquote>)}</details>}
+  return <section className="agent-suggestion"><details><DisclosureSummary>核对{labels[suggestion.kind]}建议</DisclosureSummary>{stale&&<p role="status">对话或记录已有更新，这份建议不能直接保存。你修改的文字仍保留，可请 Reso 按最新内容重新整理。</p>}<p className="supporting-copy">{suggestion.kind==='summary'?'保存后更新私人摘要，不会更新已经分享的版本。':suggestion.kind==='nvc'?'保存后更新这件事的表达练习，仅本人可见。':'确认后新增一条私人回访记录，不会自动发送提醒。'}</p>
+    {!!suggestion.sources?.length&&<details><DisclosureSummary>参考的原话</DisclosureSummary>{suggestion.sources.map((s,i)=><blockquote key={i}>{s.content}</blockquote>)}</details>}
     {Object.entries(draft.values).map(([key,value])=><label className="field-label" key={key} htmlFor={`agent-${suggestion.id}-${key}`}>{fieldLabels[key]}<textarea id={`agent-${suggestion.id}-${key}`} disabled={busy} maxLength={key==='summary'?3000:key==='next_step'?1000:2000} value={value} onChange={e=>draft.update({...draft.values,[key]:e.target.value})}/></label>)}
     <SaveStatus saved={false}>{draft.dirty?(draft.persistent?'修改已暂存在本机，确认后才会保存':'修改暂时只在当前页面，离开前请复制保存'):''}</SaveStatus>
     <div className="two-actions"><Button secondary disabled={busy} onClick={()=>resolve('dismiss')}>不用这份建议</Button>{!stale&&<Button disabled={busy||empty} onClick={()=>resolve('apply')}>确认保存{labels[suggestion.kind]}</Button>}</div>

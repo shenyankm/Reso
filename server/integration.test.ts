@@ -142,7 +142,7 @@ test('local MVP persists data and enforces private, room and counselor boundarie
     assert.equal(failedRun.status,'error');assert.ok(failedRun.trigger_message_id);assert.ok(failedRun.response_message_id);assert.ok(failedRun.finished_at)
     const consultantId=randomUUID()
     await testDatabase.fixtures.pool.query("UPDATE profiles SET role='counselor' WHERE user_id=$1",[counselor.id])
-    await testDatabase.fixtures.pool.query('INSERT INTO consultants(id,user_id,name,approach,qualifications,price,test_only) VALUES($1,$2,$3,$4,$5,$6,true)',[consultantId,counselor.id,'本地测试老师','测试','非真实资质','本地测试不收费'])
+    await testDatabase.fixtures.pool.query('INSERT INTO consultants(id,user_id,name,approach,qualifications,price,test_only,verified_at) VALUES($1,$2,$3,$4,$5,$6,false,now())',[consultantId,counselor.id,'本地测试老师','测试','非真实资质','本地测试不收费'])
     const apply=await call('POST',`/api/events/${id}/applications`,alice.cookie,{consultantId,shareSummary:false,version:2,clientId:randomUUID()});assert.equal(apply.statusCode,200,apply.body)
     const applicationId=apply.json().id
     const inbox=await call('GET','/api/counselor/applications',counselor.cookie);assert.equal(inbox.statusCode,200);assert.equal(inbox.json()[0].shared_summary,null);assert.ok(!inbox.body.includes('PRIVATE_ONLY_'))

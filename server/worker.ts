@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { PgBoss } from 'pg-boss'
 import { createDatabase, sql } from './db'
 import { createAgent, promptVersion } from './agent'
+import { publicDecisionSummary } from './decision-summary'
 import { loadAgentContext } from './agent-context'
 import type { ReplyJob } from './agent-context'
 export type { ReplyJob } from './agent-context'
@@ -64,7 +65,8 @@ export async function processReply(database: ReturnType<typeof createDatabase>, 
         if(!cardType&&job.domain==='private'&&responses[0])for(const [slot,proposal]of result.assessment.proposals.entries())await query(sql`INSERT INTO agent_actions(event_id,run_id,message_id,slot,base_version,proposal) VALUES(${job.eventId},${runId},${responses[0].id},${slot},${version},${JSON.stringify(proposal)}::jsonb) ON CONFLICT(message_id,slot) DO NOTHING`,tx)
         if(cardType)await query(sql`INSERT INTO exercises(event_id,paused) VALUES(${job.eventId},true) ON CONFLICT(event_id) DO UPDATE SET paused=true,version=exercises.version+1,updated_at=now()`,tx)
         if(cancelled.aborted)throw new Error('WORKER_INTERRUPTED')
-        await query(sql`UPDATE agent_runs SET status='complete',assessment=${JSON.stringify(result.assessment)}::jsonb,checkpoint=${JSON.stringify(result.progress)}::jsonb,response_message_id=${responses[0]?.id || null},finished_at=now() WHERE id=${runId}`, tx)
+        const checkpoint={...result.progress,decision_summary:publicDecisionSummary(result.progress,job.domain)}
+        await query(sql`UPDATE agent_runs SET status='complete',assessment=${JSON.stringify(result.assessment)}::jsonb,checkpoint=${JSON.stringify(checkpoint)}::jsonb,response_message_id=${responses[0]?.id || null},finished_at=now() WHERE id=${runId}`, tx)
       })
     } catch (error) {
       const code=cancelled.aborted?(lost.signal.aborted?'WORKER_CONNECTION_LOST':signal?.aborted?'WORKER_INTERRUPTED':'AGENT_TIMEOUT'):error instanceof Error&&/^[A-Z0-9_]+$/.test(error.message)?error.message:'MODEL_REQUEST_FAILED'

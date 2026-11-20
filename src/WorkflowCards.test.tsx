@@ -12,9 +12,13 @@ const application:Application={id:'application',event_id:'event',consultant_id:'
 test('a proposed appointment asks the applicant to confirm; old note shares remain revocable without a visible current note',()=>{
   const client=renderToStaticMarkup(<ClientApplication application={{...application,note_content:null,note_shares:[{recipient_id:'member',source_version:1}]}} members={[]} {...actions}/> )
   assert.ok(client.includes('确认这个时间'));assert.ok(client.includes('需要换个时间'))
+  assert.ok(!client.includes('已预约'))
   assert.ok(client.includes('撤回纪要'));assert.ok(!client.includes('确认分享纪要'))
   const expert=renderToStaticMarkup(<CounselorApplication application={application} {...actions}/> )
-  assert.ok(expert.includes('待申请人确认'));assert.ok(!expert.includes('双方已确认时间'))
+  assert.ok(expert.includes('待申请人确认'));assert.ok(!expert.includes('已预约'))
+  const confirmed={...application,status:'scheduled' as const,scheduled_at:application.proposed_at,proposed_at:null}
+  assert.match(renderToStaticMarkup(<ClientApplication application={confirmed} members={[]} {...actions}/>),/data-status="scheduled">已预约/)
+  assert.match(renderToStaticMarkup(<CounselorApplication application={confirmed} {...actions}/>),/data-status="scheduled">已预约/)
 })
 
 test('a disputed model interpretation retains its source and cannot render as joint confirmation',()=>{
@@ -89,20 +93,30 @@ test('only important AI understandings get a check prompt, without duplicating p
 test('each assistant turn has a collapsed public summary without exposing legacy reasoning',()=>{
   const message:ChatMessage={id:'1',event_id:'event',author_id:null,author_name:'Reso',domain:'private',role:'assistant',content:'这是最终回复。',status:'complete',client_id:null,in_reply_to:'0',created_at:'2026-11-15T00:00:00Z',card_type:null,reply_summary:'先区分原话与假设。<script>不得作为 HTML 执行</script>'}
   const render=(change:Partial<ChatMessage>)=>renderToStaticMarkup(<MessageReasoning message={{...message,...change}}/>)
-  const html=render({});assert.match(html,/思考摘要/);assert.match(html,/role="region"/);assert.match(html,/tabindex="0"/);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>|这是最终回复。|<details[^>]* open/)
+  const html=render({});assert.match(html,/决策摘要/);assert.match(html,/role="region"/);assert.match(html,/tabindex="0"/);assert.match(html,/&lt;script&gt;/);assert.doesNotMatch(html,/<script>|这是最终回复。|<details[^>]* open/)
   assert.match(render({reply_summary:null}),/历史回复/)
   assert.match(render({status:'error',author_name:'系统',reply_summary:null}),/尚未形成/)
-  assert.match(render({card_type:'safety'}),/思考摘要/)
+  assert.match(render({card_type:'safety'}),/决策摘要/)
   assert.equal(render({role:'user'}),'')
   assert.equal(render({author_name:'其他'}),'')
+  const structured=render({decision_summary:{
+    state:'主动了解方法',situation:'已有部分经过',strategy:'先核对',execution:'介绍可选练习',
+    sources:['当前对话原话'],evidence:['“我想试试”'],hypotheses:[],theory:null,method:'提供可选择的方法',
+    route:'C',stage:'理解经历的意义',skill:'method_offer',tools:['retrieve_methods'],
+  }})
+  assert.doesNotMatch(structured,/<details[^>]* open/)
+  assert.match(structured,/<dt>当前状态：<\/dt><dd>主动了解方法<\/dd>/)
+  assert.match(structured,/<dt>动态路由：<\/dt><dd>C · 理解经历的意义<\/dd>/)
+  assert.match(structured,/<dt>Tool：<\/dt><dd>retrieve_methods<\/dd>/)
 })
 
 
-test('people overview deduplicates people, searches shared events and never invents relationship categories',()=>{
-  const connections=[{user_id:'a',name:'小禾',event_id:'e1',event_title:'家里那件事',last_interaction_at:'2026-11-15T10:00:00Z'},{user_id:'a',name:'小禾',event_id:'e2',event_title:'周末安排',last_interaction_at:'2026-11-14T10:00:00Z'},{user_id:'b',name:'小雨',event_id:'e2',event_title:'周末安排',last_interaction_at:'2026-11-14T10:00:00Z'}]
+test('people overview deduplicates contacts and uses only their assigned relationship categories',()=>{
+  const connections=[{user_id:'a',name:'小禾',event_id:'e1',event_title:'家里那件事',last_interaction_at:'2026-11-15T10:00:00Z',category:'family' as const},{user_id:'a',name:'小禾',event_id:'e2',event_title:'周末安排',last_interaction_at:'2026-11-14T10:00:00Z',category:'family' as const},{user_id:'b',name:'小雨',event_id:'e2',event_title:'周末安排',last_interaction_at:'2026-11-14T10:00:00Z'}]
   const props={connections,search:'',busy:false,onPerson:()=>{},onTopic:()=>{},onSupport:()=>{},onApplication:()=>{}}
   const html=renderToStaticMarkup(<PeopleOverview {...props}/>)
-  assert.ok(html.includes('共 2 人'));assert.equal((html.match(/class="people-group"/g)||[]).length,2);assert.equal((html.match(/class="person-avatar"/g)||[]).length,5)
+  assert.ok(html.includes('共 2 人'));assert.equal((html.match(/class="people-group"/g)||[]).length,2);assert.equal((html.match(/class="person-avatar"/g)||[]).length,4)
+  assert.ok(html.includes('家人'));assert.ok(html.includes('未分类'))
   assert.ok(html.includes('最近聊到的人'));assert.ok(html.includes('今天想聊点轻松的？'));assert.ok(html.includes('我的专业支持'));assert.ok(!html.includes('已预约'));assert.ok(!html.includes('同学'))
   const filtered=renderToStaticMarkup(<PeopleOverview {...props} search="家里"/>);assert.ok(filtered.includes('小禾'));assert.ok(!filtered.includes('小雨'))
   const empty=renderToStaticMarkup(<PeopleOverview {...props} connections={[]}/>);assert.ok(empty.includes('共 0 人'));assert.ok(empty.includes('一起聊过的人会出现在这里'))

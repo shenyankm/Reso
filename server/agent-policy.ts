@@ -70,10 +70,12 @@ export const routeDecisionSchema=z.object({
 }).strict()
 export type RouteDecision=z.infer<typeof routeDecisionSchema>
 
+export const meaningExplorationReference='CBT 的事实与解释区分'
+
 export const skillInstructions:Record<RouteDecision['skill'],string>={
   emotion_support:'回应这件事中具体的感受、努力或需要；不止换词复述，不急于讲理、解释对方或推进任务。',
   event_clarification:'区分对方原话、发生经过与本人的解释，先用已经提供的事实；缺少关键事实才核对，不替任何一方判对错。',
-  meaning_exploration:'探索事件、当时的解释、感受与自我评价怎样联系，可参考 CBT 的事实/解释区分。一次核对一个假设，不把解释当事实，不贴认知或疾病标签，不替家长辩护。',
+  meaning_exploration:`探索事件、当时的解释、感受与自我评价怎样联系，可参考 ${meaningExplorationReference}。一次核对一个假设，不把解释当事实，不贴认知或疾病标签，不替家长辩护。`,
   practical_advice:'直接给一个贴合当前事实的说法或小建议，保留用户选择；完成用户要求的一句说法或建议就停，不附加用法、评价或新的选择，不升级成表单、练习或邀请。',
   method_offer:'结合本人已提供的具体事件或请求，简要说明方法可能适合什么；检索对应方法卡，只作可选择的推荐，用户可以继续聊，不说已经开始或会有确定疗效。',
   guided_practice:'先查对应方法步骤和禁忌，再按本人意愿引导一个小步骤；允许留空、暂停和退出，不强迫积极或和解，保存和分享仍分别确认。',
@@ -83,6 +85,12 @@ export const skillInstructions:Record<RouteDecision['skill'],string>={
   safety_support:'先关注现实中的安全与支持，暂停普通练习和邀请，不假定监护人一定安全，不泄露私人内容，不声称已经联系真人或提供实时急救。',
   reflection:'先核对实际尝试、感受与障碍，区分已经发生、计划与假设；允许没有变化，不宣称一次练习解决关系问题。',
   observation:'尊重参与者自由沟通，不设置轮次或 Your turn；没有必要介入时保持安静，不生成私人卡片。',
+}
+
+export function recognizeExpressionDraft(turn:TurnAssessment,message:string):TurnAssessment{
+  const explicit=/(?:^|[。！？；.!?;\n])\s*(?:请\s*)?(?:帮我|替我)(?:写下|写一份|整理一下|整理成)(?:一份|一下)?(?:我的|我自己的|自己的)?(?:表达(?:练习|草稿)?|非暴力沟通(?:练习|草稿)?)(?:吧|好吗|可以吗)?[。！？.!?\s]*$/.test(message.trim())
+  if(!explicit||turn.record_request||turn.risk!=='none'||turn.refusal_target||['correct','refuse','pause','end'].includes(turn.intent)||['paused','declined'].includes(turn.readiness))return turn
+  return {...turn,intent:'exercise',readiness:'willing',record_request:'nvc',method_candidate:'nvc',user_requested_method:true}
 }
 
 export function decideRoute(turn:TurnAssessment,previous:AgentSessionState,domain:Domain,latestMessageId:string|null,contextVersion=previous.context_version):{decision:RouteDecision;state:AgentSessionState}{

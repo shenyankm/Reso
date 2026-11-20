@@ -30,6 +30,13 @@ class MainActivity : TauriActivity() {
     if (granted) runMeeting(request, reply)
     else sendMeetingReply(request, reply, JSONObject().put("error", "请允许本地网络访问后再连接两台手机"))
   }
+  private var reminderPermissionReply: JavaScriptReplyProxy? = null
+  private val reminderPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+    val reply = reminderPermissionReply
+    reminderPermissionReply = null
+    reply?.postMessage(if (FollowupReminders.allowed(this)) "allowed" else "denied")
+  }
+
   private data class PendingExport(val bytes: ByteArray, val reply: JavaScriptReplyProxy)
   private var pendingExport: PendingExport? = null
   private val exportFile = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -105,6 +112,27 @@ class MainActivity : TauriActivity() {
       // E2E uses a separate origin so it never replaces the user service mapping.
       val exportOrigins = mutableSetOf("http://localhost:5173", "https://openwook.cloud")
       if (BuildConfig.DEBUG) exportOrigins.add("http://127.0.0.1:5189")
+      if (BuildConfig.APPLICATION_ID != "app.reso.local.roadshow") {
+        WebViewCompat.addWebMessageListener(webView, "ResoReminders", exportOrigins) { _, message, _, main, reply ->
+          val input = message.data?.takeIf { main && it.length <= 16_384 }
+          val request = input?.let { runCatching { JSONObject(it) }.getOrNull() }
+          if (request != null) runOnUiThread {
+            when (request.optString("action")) {
+              "permission" -> when {
+                FollowupReminders.allowed(this) -> reply.postMessage("allowed")
+                Build.VERSION.SDK_INT >= 33 && reminderPermissionReply == null -> {
+                  reminderPermissionReply = reply
+                  reminderPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+                else -> reply.postMessage("denied")
+              }
+              "sync" -> runCatching {
+                FollowupReminders.sync(this, request.getString("account"), request.getJSONArray("entries"))
+              }
+            }
+          }
+        }
+      }
       WebViewCompat.addWebMessageListener(webView, "ResoExport", exportOrigins) { _, message, _, isMainFrame, reply ->
         if (!isMainFrame || pendingExport != null) {
           reply.postMessage("{\"status\":\"error\"}")

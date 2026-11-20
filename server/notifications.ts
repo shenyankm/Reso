@@ -4,12 +4,16 @@ import type { Domain } from '../shared/types'
 import type {PoolClient} from 'pg'
 import type {EventEmitter} from 'node:events'
 
-export const eventNotification = z.object({ eventId: z.string().uuid(), domain: z.enum(['private','room']) })
+export const eventNotification = z.object({
+  eventId: z.string().uuid(),
+  domain: z.enum(['private','room']),
+  refreshUserId: z.string().min(1).max(100).optional(),
+})
 export type EventNotification = z.infer<typeof eventNotification>
-export type Notify = (eventId: string, domain: Domain) => Promise<void>
+export type Notify = (eventId: string, domain: Domain, refreshUserId?: string) => Promise<void>
 
-export async function publishUpdate(database: Database, eventId: string, domain: Domain) {
-  const notification = eventNotification.parse({ eventId, domain })
+export async function publishUpdate(database: Database, eventId: string, domain: Domain, refreshUserId?: string) {
+  const notification = eventNotification.parse({ eventId, domain, refreshUserId })
   try{await database.pool.query("SELECT pg_notify('reso_updates',$1)", [JSON.stringify(notification)])}
   catch{console.error('Update notification unavailable; clients will recover through periodic refresh.')}
 }

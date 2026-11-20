@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, Clock3, LockKeyhole, MessageCircleMore, Plus, Search, Sparkles, UsersRound } from 'lucide-react'
 import { Button, Dialog } from '../components'
-import { TopicCards } from '../PeopleOverview'
 import type { ResultPage } from './Results'
 
 const asset = '/assets/roadshow-relations/'
@@ -153,7 +152,7 @@ export function RelationsHome({ page, roomName, roomStarted, storySaved, applied
         </button> : <p className="relations-empty">咨询申请会显示在这里。</p>}
       </section>}
     </>}
-    {sheet === 'topics' && <Dialog title="轻松聊一聊" onClose={() => setSheet(undefined)}><TopicCards/></Dialog>}
+    {sheet === 'topics' && <Dialog title="轻松聊一聊" onClose={() => setSheet(undefined)}><DemoTopicCards/></Dialog>}
     {sheet === 'add' && <Dialog title="添加重要的人" onClose={() => setSheet(undefined)}>
       <form className="relations-add" onSubmit={event => {
         event.preventDefault()
@@ -180,4 +179,10 @@ export function RelationsHome({ page, roomName, roomStarted, storySaved, applied
 function Portrait({ person }: { person: Person }) {
   return person.image ? <img className="relations-portrait" src={asset + person.image + '.webp'} alt=""/> :
     <span className="relations-portrait relations-initial" aria-hidden="true">{Array.from(person.name)[0]}</span>
+}
+
+const topics=['最近哪件小事让你开心了一下？','如果明天有一整天空闲，你想怎么过？','最近有没有一首想推荐给对方的歌？','小时候喜欢、现在还喜欢的东西是什么？']
+function DemoTopicCards(){
+  const[index,setIndex]=useState(0),[notice,setNotice]=useState('')
+  return <div className="topic-cards"><p className="dialog-description">轮流回答，也可以跳过不想聊的话题。话题不会自动发送。</p><div className="topic-question" aria-live="polite">{topics[index]}</div><div className="two-actions"><Button secondary onClick={()=>{setIndex((index+1)%topics.length);setNotice('')}}>换个话题</Button><Button onClick={async()=>{try{await navigator.clipboard.writeText(topics[index]);setNotice('已复制，可以在聊天中粘贴后发送。')}catch{setNotice('未能复制，可以长按上方话题选择文字。')}}}>复制话题</Button></div>{notice&&<p className="fineprint" role="status">{notice}</p>}</div>
 }

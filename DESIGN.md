@@ -114,11 +114,11 @@ Ground is the off-white application canvas; paper is the card and control surfac
 
 ## Typography
 
-The system uses the platform Chinese sans stack throughout, with Songti reserved for story titles and the music artwork title. Main screen headings are 22–23px, card headings 16–18px, message text 14px, and supporting labels 11–13px. The welcome display is the largest text; it reduces to 32px at the narrow breakpoint. Comfortable message line spacing lets Chinese copy breathe without making the compact controls oversized.
+The system uses the platform Chinese sans stack throughout, with Songti reserved for story titles and the music artwork title. Online app bars use a shared 22px semibold title, reduced to 20px in narrow windows. Card headings are 16–18px, message text is 14px, and supporting labels are 11–13px. The welcome display is the largest text; it reduces to 32px at the narrow breakpoint. Comfortable message line spacing lets Chinese copy breathe without making the compact controls oversized.
 
 ## Layout
 
-Use one mobile column, full width up to 480px, and a 100dvh app frame. Header, composer, and bottom navigation remain outside the scrolling conversation. Conversation gutters are 16px with 16px gaps; welcome gutters are 20px. At 360px and below, conversation gutters reduce to 12px and ordinary cards to 14px padding. At 640px and above, retain a centered 430px preview, 20px vertical margins, 28px outer corners, and a maximum height of 980px. Respect safe-area insets at the header and bottom controls.
+Use one mobile column, full width up to 480px, and a 100dvh app frame. Header, composer, and bottom navigation remain outside the scrolling conversation. Online app bars, page content, the composer and bottom navigation share a 16px horizontal gutter, reduced to 12px at widths of 360px and below. The standard app bar is at least 80px high and uses a 64px minimum in short windows. Conversation gaps are 16px. In narrow windows, ordinary card padding is 14px. At 640px and above, retain a centered 430px preview, 20px vertical margins, 28px outer corners, and a maximum height of 980px. Respect safe-area insets at the header and bottom controls.
 
 ## Elevation & Depth
 
@@ -126,17 +126,17 @@ Depth is mostly tonal: off-white ground, white cards, pale tinted sections, and 
 
 ## Shapes
 
-Messages and standard cards use soft 20px corners. Buttons and chips are pill-like; the composer is a rounded 26px capsule. Nested fields and notes use smaller 12–14px corners. Icons remain simple outlined strokes, usually 20–24px; circular controls are at least 48px targets. Story and portrait images are clipped inside their existing card shapes rather than treated as page backgrounds.
+Message bubbles use 20px corners. Online standard cards, including story and relationship surfaces, use 16px corners. Compact decision summaries and nested sharing panels use 12px corners. Buttons and chips are pill-like; the composer is a rounded 26px capsule. Nested fields and notes use smaller 12–14px corners. Icons remain simple outlined strokes, usually 20–24px; circular controls are at least 48px targets. Story and portrait images are clipped inside their existing card shapes rather than treated as page backgrounds.
 
 ## Components
 
 ### Buttons
 
-The shared Button uses primary gradient or white outlined secondary variants, a minimum 48px height, semibold 14px primary text, and centered icon/text alignment. The welcome action is taller. Disabled actions use reduced opacity; press reduces opacity and hover subtly reduces brightness. Keyboard focus uses the shared blue outline.
+The shared Button uses primary gradient or white outlined secondary variants, a minimum 48px height, semibold 14px primary text, and centered icon/text alignment. Relationship banners reuse the primary gradient. Their illustration and section background are separate from the button style. The welcome action is taller. Disabled actions use reduced opacity; press reduces opacity and hover subtly reduces brightness. Keyboard focus uses the shared blue outline.
 
 ### Cards / Containers
 
-The shared Card is white with a thin pale blue border, 20px corners, and 18px padding. Titles align a small outlined icon with the heading. Discovery cards replace the upper area with a pale blue/pink gradient; story cards use lavender, serif headings, and supplied landscape imagery.
+The shared online Card is white with a thin pale blue border, 16px corners, and 18px padding. Titles align a small outlined icon with the heading. Discovery cards replace the upper area with a pale blue/pink gradient; story cards use lavender, serif headings, and supplied landscape imagery.
 
 ### Messages and Suggestions
 
@@ -148,13 +148,15 @@ The composer is a white capsule with an inset circular action; the input has tra
 
 ### Navigation
 
-The business bottom bar has three equal icon/label destinations outside chat: Reso, 聊过的事, and 我的. Reso always opens a private conversation owned by the current account, including when arriving from an invited room. Rooms open through explicit shared-event or people entries. Private and room chat hide the bottom bar, keep the composer above the safe area, and retain header and system Back navigation. Active navigation is blue with a pale circular icon halo; inactive labels are muted. Event and people tabs are rounded white controls with a pale blue selected fill. The standalone UI preview keeps its original navigation.
+The online app uses two equal icon and label destinations: Reso and 我的关系. Returning from 我的关系 resumes the last conversation. Shared events and person entries can open rooms. In chat, the composer and bottom bar sit below the scrolling conversation. The screen retains header and system Back navigation. Active navigation is blue with a pale circular icon halo; inactive labels are muted. Event and people tabs are rounded white controls with a pale blue selected fill. The standalone UI preview keeps its original navigation.
 
-我的 groups account identity, saved records, and privacy/settings in the existing single-column layout. White grouped rows carry actions; headings sit on the page ground. Nickname edits stay inline with a labeled field, explicit save/cancel and retained input after failure. Saved records name their type, source event and update time, and open the original private record. Local drafts are explicitly distinguished from records saved to the account. Privacy/data offers per-event export through the existing platform export flow. Account shortcuts appear only in chat, where the bottom navigation is hidden: a person icon opens a small non-modal popover below the button with 我的 and 安全与人工支持. Other pages use the bottom 我的 destination; account details, service information, professional workspace and logout stay inside that page. The event-context ellipsis continues to own event actions.
+我的 groups account identity, saved records, and privacy/settings in the existing single-column layout. White grouped rows carry actions; headings sit on the page ground. Nickname edits stay inline with a labeled field, explicit save/cancel and retained input after failure. Saved records name their type, source event and update time, and open the original private record. Local drafts are explicitly distinguished from records saved to the account. Privacy/data offers per-event export through the existing platform export flow. Account shortcuts appear in chat. The person icon opens a small non-modal popover with 我的 and 安全与人工支持. Account details, service information, professional workspace and logout are available in 我的. The event-context ellipsis continues to own event actions.
 
 我的记录 collects all saved stories, expression practices and followups. 待回访 shows only followups not yet reviewed; reviewing one removes it from this action list while keeping its original record. Practice entry labels describe the user's goal: 整理这件事, 写下我的表达, and 练习怎么开口. Keep the existing methods, fields and save/share boundaries behind these labels. Chat tools contain practice and communication actions; this event’s records stay in the event menu. The first empty conversation explains the composer’s tool button with noninteractive text instead of adding a second button.
 
 ### Dialogs and Feedback
+
+Online disclosures use a trailing chevron, a minimum 48px target and a visible inset focus ring. The chevron rotates on expansion. Booking statuses share one badge in relationship lists, appointment details and the counselor workspace. Proposed time uses amber and confirmed appointments use green.
 
 Use native modal dialogs with rounded light surfaces, close control, backdrop, and contained scrolling. Toasts use a compact dark rounded surface above the composer. State transitions are short; typing and toast entry motion are suppressed by the reduced-motion preference.
 
@@ -181,7 +183,7 @@ The tools sheet progressively reveals three task groups. Account actions stay in
 
 ## Entry and recovery
 
-The business welcome screen uses one privacy highlight and plain promise rows. Its primary login action sits outside the scrolling introduction and remains visible with enlarged text; the original mascot and action gradient remain. An empty private conversation offers one optional route to chat tools, which disappears after the first saved message. Empty understanding, growth, and application views connect to a real next action.
+The online welcome screen uses the original mascot, one privacy highlight, a grouped list of promises, and access to the terms, privacy policy and guardian information. The scrollable primary action opens login after consent. An empty private conversation offers one optional route to chat tools, which disappears after the first saved message. Empty understanding, growth, and application views connect to a real next action.
 
 Event names in the context bar use a single-line preview; the complete name remains in the event menu and accessible action name. Event-read failures show retry and list recovery, and disable the composer until detail is available. Pending dialogs expose busy state, disable dismiss controls, and retain form contents until the request settles. Account expiry returns to login mode and clears the password.
 
@@ -191,7 +193,7 @@ Blue identifies actions and understanding; existing purple identifies narrative 
 
 The welcome mascot gives one 640ms greeting, with the CTA available immediately. Chapter position moves along a 220ms SVG line; numbered 48px controls permit direct navigation and do not imply that earlier chapters were completed. Successful private saves reveal a 260ms check. Dialogs enter with a brief lift while dismissal remains immediate. These effects use CSS/SVG and existing art, with no loops, sound or new dependencies. Reduced motion removes movement while preserving the complete static feedback.
 
-The conversation remains still and has no bottom navigation. At 320px with 200% system text, the private visibility label stays together; the event context keeps its accessible full name. Professional refresh sits beside its section title and can wrap as a unit when needed.
+The composer and bottom navigation stay outside the scrolling conversation. At 320px with 200% system text, the private visibility label stays together; the event context keeps its accessible full name. Professional refresh sits beside its section title and can wrap as a unit when needed.
 
 ## Copy and compact Android windows
 
@@ -205,13 +207,13 @@ Chat tools keep a fixed 48px plus control beside the composer, independently of 
 
 Long invitation cards keep their full content height and scroll with the containing page. Dialog headers stay visible while their content scrolls, including enlarged system text and keyboard-constrained windows.
 
-Each assistant turn has a collapsed “思考摘要” disclosure immediately before its final bubble. Use the existing paper, line and muted blue tokens, a 14px radius, a 48px summary target and 13px supporting text. Expand only the short public response rationale, never raw provider reasoning. Historical replies explicitly say no summary was recorded; failed replies say no usable summary was produced. Expanded plain text wraps within the existing bounded region, with visible keyboard focus.
+Each assistant turn has a collapsed “Reso 决策摘要” disclosure immediately before its final bubble. The structured card uses a lavender surface, the compact 12px radius, a 48px summary target and 13px supporting text. Group state and response approach, evidence and methods, then route, Skill and completed tool calls. The expanded card scrolls with the conversation. Earlier replies use their recorded short summary or an explicit missing-summary state. Failed replies say no usable summary was produced.
 
 While a reply runs, a quiet 13px status line names the actual backend phase: understanding, checking available information, composing, or reviewing. Transport failure says reconnecting rather than pretending the model is still thinking. Once validated and committed, only a newly observed reply reveals graphemes at about 33 per second. The complete text remains available to assistive technology; reduced motion, historical messages and urgent fixed safety guidance show the full text immediately. Backgrounding finishes the reveal, remounting does not replay it, and scrolling follows only while the reader stays near the bottom. No fabricated thinking delay or percentage is used.
 
 
 ### Important people overview
 
-The 重要的人 tab follows the supplied relationship overview composition: mascot and title with two circular search/invite controls, a full-width tinted search field, icon tabs, three recent circular nickname avatars, a lavender/blue topic banner with the existing Reso character, grouped disclosure rows, and a separate private professional-support card. Keep the established three-destination bottom navigation.
+The 重要的人 tab follows the supplied relationship overview composition: mascot and title with two circular search/invite controls, a full-width tinted search field, icon tabs, three recent circular nickname avatars, a lavender/blue topic banner with the existing Reso character, grouped disclosure rows, and a separate private professional-support card. Use the same two-destination bottom navigation as the conversation.
 
-Use actual account names, unique-person counts and shared-room titles. Current data has no family/friend/classmate classification or portrait uploads; group by shared events and use nickname initials rather than assigning sample relationships or photos. Private support rows use the signed-in applicant's actual status, label test services, and return to the original application. The empty state keeps the same composition with truthful guidance. Search matches names and shared event titles. All controls retain 48px targets and long names wrap; the support header can wrap in compact windows.
+Use actual account names, unique-person counts and shared-room titles. Group by each user’s private contact categories, with initials for avatars. Conversation history is available for ended rooms, with a visible status and no composer. Private support rows use the signed-in applicant's actual status, label test services, and return to the original application. The empty state keeps the same composition with truthful guidance. Search matches names and shared event titles. All controls retain 48px targets and long names wrap; the support header can wrap in compact windows.

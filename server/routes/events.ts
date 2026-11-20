@@ -8,28 +8,93 @@ import type {Domain} from '../../shared/types'
 import {readAgentActions} from '../agent-actions'
 import {supportsMethodOffers} from '../../shared/capabilities'
 import { readUnderstandings } from '../understandings'
-import {legacyReplySummary,replyPhases} from '../../shared/reply'
+import {decisionSummarySchema,legacyReplySummary,replyPhases} from '../../shared/reply'
 import type {ReplyPhase} from '../../shared/reply'
 import type { ChatMessage, EventRecord, Exercise, Questionnaire,MessagePage } from '../../shared/types'
+import { contactCategories, type TimelineEntry } from '../../shared/relationships'
 
 export function registerEvents(app: FastifyInstance, context: RouteContext) {
-  const { database, requireEventOwner, requireRoomParticipant, revision, notify, enqueue } = context
+  const { database, requireEventOwner, requireRoomParticipant, requireOpenRoom, revision, notify, enqueue } = context
   const { query, db } = database
   const messageQuery=z.object({domain:domainSchema,before:z.string().refine(value=>/^\d{1,19}$/.test(value)&&BigInt(value)<=9223372036854775807n).optional()})
   async function readMessages(id:string,domain:Domain,before?:string,methodOffers=false):Promise<MessagePage>{
     const rows=(await query<ChatMessage>(sql`SELECT * FROM messages WHERE event_id=${id} AND domain=${domain} ${before?sql`AND id<${before}`:sql``} ORDER BY id DESC LIMIT 51`)).reverse()
     const messages=rows.slice(rows.length>50?1:0),actions=domain==='private'?await readAgentActions(database,id,messages.map(m=>String(m.id))):[]
-    const runs=messages.length?await query<{response_message_id:string;kind:ChatMessage['understanding_kind'];reply_summary:string|null}>(sql`SELECT DISTINCT ON (response_message_id) response_message_id::text,assessment->>'understanding_kind' AS kind,checkpoint->>'reply_summary' AS reply_summary FROM agent_runs WHERE event_id=${id} AND domain=${domain} AND status='complete' AND response_message_id IN (${sql.join(messages.map(m=>sql`${m.id}`),sql`,`)}) ORDER BY response_message_id,created_at DESC`):[]
+    const runs=messages.length?await query<{response_message_id:string;kind:ChatMessage['understanding_kind'];reply_summary:string|null;decision_summary:unknown}>(sql`
+      SELECT DISTINCT ON (response_message_id) response_message_id::text,assessment->>'understanding_kind' AS kind,
+        checkpoint->>'reply_summary' AS reply_summary,checkpoint->'decision_summary' AS decision_summary
+      FROM agent_runs WHERE event_id=${id} AND domain=${domain} AND status='complete'
+      AND response_message_id IN (${sql.join(messages.map(m=>sql`${m.id}`),sql`,`)})
+      ORDER BY response_message_id,created_at DESC
+    `):[]
     const metadata=new Map(runs.map(run=>[run.response_message_id,run]))
-    return{messages:messages.map(m=>({...m,understanding_kind:m.role==='assistant'&&m.author_name==='Reso'&&m.status==='complete'&&!m.card_type?metadata.get(String(m.id))?.kind||null:null,reply_summary:m.role!=='assistant'?null:m.status==='error'?'这轮回复未完成，尚未形成可用的思考摘要。':m.author_name==='Reso'?metadata.get(String(m.id))?.reply_summary?.trim()||legacyReplySummary:null,agent_actions:actions.filter(a=>a.message_id===String(m.id)&&(methodOffers||a.kind!=='method'))})),hasMore:rows.length>50}
+    const visible=messages.map(m=>{
+      const run=metadata.get(String(m.id)),isReso=m.role==='assistant'&&m.author_name==='Reso'&&m.status==='complete'
+      const decision=isReso?decisionSummarySchema.safeParse(run?.decision_summary):null
+      return {...m,
+        understanding_kind:isReso&&!m.card_type?run?.kind||null:null,
+        reply_summary:m.role!=='assistant'?null:m.status==='error'?'这轮回复未完成，尚未形成可用的决策摘要。':isReso?run?.reply_summary?.trim()||legacyReplySummary:null,
+        decision_summary:decision?.success?decision.data:null,
+        agent_actions:actions.filter(a=>a.message_id===String(m.id)&&(methodOffers||a.kind!=='method')),
+      }
+    })
+    return {messages:visible,hasMore:rows.length>50}
   }
   app.get('/api/events/:id/messages',async request=>{
     const id=eventId(request),{domain,before}=messageQuery.parse(request.query)
     await (domain==='private'?requireEventOwner:requireRoomParticipant)(id,request.resoUser!.id)
     return readMessages(id,domain,before,supportsMethodOffers(request.headers['x-reso-features']))
   })
-  app.get('/api/events', async request => query(sql`SELECT e.id,e.owner_id,CASE WHEN e.owner_id=${request.resoUser!.id} THEN e.title ELSE e.room_title END AS title,e.created_at,CASE WHEN e.owner_id=${request.resoUser!.id} THEN e.updated_at ELSE e.room_updated_at END AS updated_at,(e.owner_id=${request.resoUser!.id}) AS is_owner FROM events e WHERE e.id IN (SELECT id FROM events WHERE owner_id=${request.resoUser!.id} UNION SELECT event_id FROM members WHERE user_id=${request.resoUser!.id} AND active) ORDER BY CASE WHEN e.owner_id=${request.resoUser!.id} THEN e.updated_at ELSE e.room_updated_at END DESC`))
-  app.get('/api/people',async request=>query(sql`WITH mine AS (SELECT id FROM events WHERE owner_id=${request.resoUser!.id} UNION SELECT event_id FROM members WHERE user_id=${request.resoUser!.id} AND active), participants AS (SELECT e.id AS event_id,e.owner_id AS user_id FROM events e JOIN mine ON mine.id=e.id UNION SELECT m.event_id,m.user_id FROM members m JOIN mine ON mine.id=m.event_id WHERE m.active) SELECT DISTINCT p.user_id,u.name,e.id AS event_id,e.room_title AS event_title,e.room_updated_at AS last_interaction_at FROM participants p JOIN events e ON e.id=p.event_id JOIN "user" u ON u.id=p.user_id WHERE p.user_id<>${request.resoUser!.id} ORDER BY e.room_updated_at DESC,u.name,e.id`))
+  app.get('/api/events', async request => query(sql`SELECT e.id,e.owner_id,CASE WHEN e.owner_id=${request.resoUser!.id} THEN e.title ELSE e.room_title END AS title,e.room_title,e.created_at,e.room_closed_at,CASE WHEN e.owner_id=${request.resoUser!.id} THEN e.updated_at ELSE e.room_updated_at END AS updated_at,(e.owner_id=${request.resoUser!.id}) AS is_owner FROM events e WHERE e.id IN (SELECT id FROM events WHERE owner_id=${request.resoUser!.id} UNION SELECT event_id FROM members WHERE user_id=${request.resoUser!.id} AND active) ORDER BY CASE WHEN e.owner_id=${request.resoUser!.id} THEN e.updated_at ELSE e.room_updated_at END DESC`))
+  app.get('/api/people',async request=>{
+    const userId=request.resoUser!.id
+    return query(sql`
+      WITH mine AS (SELECT id FROM events WHERE owner_id=${userId} UNION SELECT event_id FROM members WHERE user_id=${userId} AND active),
+      participants AS (
+        SELECT e.id AS event_id,e.owner_id AS user_id FROM events e JOIN mine ON mine.id=e.id
+        UNION SELECT m.event_id,m.user_id FROM members m JOIN mine ON mine.id=m.event_id WHERE m.active
+      )
+      SELECT p.user_id,u.name,e.id AS event_id,e.room_title AS event_title,e.room_updated_at AS last_interaction_at,e.room_closed_at,c.category
+      FROM participants p JOIN events e ON e.id=p.event_id JOIN "user" u ON u.id=p.user_id
+      LEFT JOIN contact_categories c ON c.user_id=${userId} AND c.contact_id=p.user_id
+      WHERE p.user_id<>${userId} ORDER BY e.room_updated_at DESC,u.name,e.id
+    `)
+  })
+  app.put('/api/people/:contactId/category',async request=>{
+    const userId=request.resoUser!.id,contact=text(100).parse((request.params as {contactId:string}).contactId)
+    const {category}=z.object({category:z.enum(contactCategories)}).parse(request.body)
+    const changed=await query(sql`
+      INSERT INTO contact_categories(user_id,contact_id,category)
+      SELECT ${userId},${contact},${category}
+      WHERE ${contact}<>${userId} AND EXISTS(
+        SELECT 1 FROM events e
+        WHERE (e.owner_id=${userId} OR EXISTS(SELECT 1 FROM members m WHERE m.event_id=e.id AND m.user_id=${userId} AND m.active))
+          AND (e.owner_id=${contact} OR EXISTS(SELECT 1 FROM members m WHERE m.event_id=e.id AND m.user_id=${contact} AND m.active))
+      )
+      ON CONFLICT(user_id,contact_id) DO UPDATE SET category=excluded.category RETURNING contact_id
+    `)
+    if(!changed.length)throw new HttpError(404,'没有找到可以分类的联系人')
+    return {category}
+  })
+  app.get('/api/events/:id/timeline',async request=>{
+    const id=eventId(request),userId=request.resoUser!.id,{domain}=z.object({domain:domainSchema}).parse(request.query)
+    return db.transaction(async tx=>{
+      const event=await (domain==='private'?requireEventOwner:requireRoomParticipant)(id,userId,tx)
+      const entries=await query<TimelineEntry>(sql`
+        SELECT id::text,created_at AS occurred_at,
+          CASE WHEN kind='participant_confirmed' THEN
+            CASE WHEN ${domain}='private' THEN 'discovery_confirmed' ELSE 'perspective_confirmed' END
+          ELSE kind END AS kind
+        FROM revisions WHERE event_id=${id} AND
+        CASE WHEN ${domain}='private' THEN actor_id=${userId} AND (
+          kind IN ('story_saved','followup_saved') OR (kind='participant_confirmed' AND value->>'kind'='discovery')
+        ) ELSE kind IN ('invite_accepted','room_closed') OR (kind='participant_confirmed' AND value->>'kind'='perspective') END
+        ORDER BY created_at DESC,id DESC LIMIT 30
+      `,tx)
+      if(domain==='private')entries.push({id:'initial',kind:'event_created',occurred_at:event.created_at})
+      return entries
+    },{isolationLevel:'repeatable read',accessMode:'read only'})
+  })
   app.post('/api/events', async request => {
     const input = z.object({ title: text(80) }).parse(request.body), userId = request.resoUser!.id
     const [event] = await query<EventRecord>(sql`INSERT INTO events(id,owner_id,title) VALUES(${randomUUID()},${userId},${input.title}) RETURNING *`)
@@ -56,11 +121,11 @@ export function registerEvents(app: FastifyInstance, context: RouteContext) {
     const {messages:rows,hasMore}=await readMessages(id,domain,before,supportsMethodOffers(request.headers['x-reso-features']))
     const last=rows.at(-1),version=domain==='private'?event.private_version:event.room_version
     const [run]=last?.role==='user'?await query<{status:'running'|'complete'|'error';response_message_id:string|null;display_phase:ReplyPhase}>(sql`SELECT status,response_message_id,checkpoint->>'display_phase' AS display_phase FROM agent_runs WHERE event_id=${id} AND domain=${domain} AND trigger_message_id=${last.id} AND context_version=${version} ORDER BY created_at DESC LIMIT 1`):[]
-    const reply_state=last?.role!=='user'?'complete':run?.status==='complete'?(run.response_message_id?'running':'silent'):run?.status||'pending'
+    const reply_state=(domain==='room'&&event.room_closed_at)||last?.role!=='user'?'complete':run?.status==='complete'?(run.response_message_id?'running':'silent'):run?.status||'pending'
     const members = await query(sql`SELECT m.user_id,u.name,EXISTS(SELECT 1 FROM share_grants g WHERE g.event_id=m.event_id AND g.recipient_id=m.user_id AND g.revoked_at IS NULL) AS shared FROM members m JOIN "user" u ON u.id=m.user_id WHERE m.event_id=${id} AND m.active`)
     const snapshots = await query(sql`SELECT g.recipient_id AS user_id,s.content,s.source_version AS version,g.granted_at FROM share_grants g JOIN share_snapshots s ON s.id=g.snapshot_id JOIN members m ON m.event_id=g.event_id AND m.user_id=g.recipient_id WHERE g.event_id=${id} AND g.revoked_at IS NULL AND m.active ${owner ? sql`` : sql`AND g.recipient_id=${userId}`}`)
     const perspectives = await query(sql`SELECT p.user_id,u.name,p.text,p.confirmed,p.version FROM perspectives p JOIN "user" u ON u.id=p.user_id WHERE p.event_id=${id} AND (p.user_id=${event.owner_id} OR EXISTS(SELECT 1 FROM members m WHERE m.event_id=p.event_id AND m.user_id=p.user_id AND m.active))`)
-    return { event: owner ? {...event,...(domain==='room'?{title:event.room_title||event.title}:{})} : { id: event.id, owner_id: event.owner_id, title: event.room_title,room_title:event.room_title, summary: '', summary_version: 0, initial_summary: '', private_version: 0, room_version: event.room_version, created_at: event.created_at, updated_at: event.room_updated_at,room_updated_at:event.room_updated_at }, messages:rows,hasMore, members, snapshots, perspectives,
+    return { event: owner ? {...event,...(domain==='room'?{title:event.room_title||event.title}:{})} : { id: event.id, owner_id: event.owner_id, title: event.room_title,room_title:event.room_title, summary: '', summary_version: 0, initial_summary: '', private_version: 0, room_version: event.room_version, created_at: event.created_at, updated_at: event.room_updated_at,room_updated_at:event.room_updated_at,room_closed_at:event.room_closed_at }, messages:rows,hasMore, members, snapshots, perspectives,
       exercise: owner && domain === 'private' ? (await query<Exercise>(sql`SELECT act,paused,notes,story,saved,version,practice_notes FROM exercises WHERE event_id=${id}`))[0] || null : null,
       questionnaire: owner && domain === 'private' ? (await query<Questionnaire>(sql`SELECT * FROM questionnaires WHERE event_id=${id}`))[0] || null : null,
       invites: owner ? await query(sql`SELECT i.id,CASE WHEN i.status='pending' AND i.expires_at<now() THEN 'expired' ELSE i.status END AS status,i.expires_at,i.created_at,u.name AS recipient_name,(i.snapshot_id IS NOT NULL) AS has_summary,s.content AS shared_content,s.source_version FROM invites i LEFT JOIN "user" u ON u.id=i.recipient_id LEFT JOIN share_snapshots s ON s.id=i.snapshot_id WHERE i.event_id=${id} ORDER BY i.created_at DESC`) : [],
@@ -78,7 +143,7 @@ export function registerEvents(app: FastifyInstance, context: RouteContext) {
     const column = input.domain === 'private' ? sql`private_version` : sql`room_version`
     const message = await db.transaction(async tx => {
       await query(sql`SELECT id FROM events WHERE id=${id} FOR UPDATE`, tx)
-      await (input.domain === 'private' ? requireEventOwner : requireRoomParticipant)(id,user.id,tx)
+      await (input.domain === 'private' ? requireEventOwner : requireOpenRoom)(id,user.id,tx)
       const rows = await query<ChatMessage>(sql`INSERT INTO messages(event_id,author_id,author_name,domain,role,content,client_id) VALUES(${id},${user.id},${user.name},${input.domain},'user',${input.content},${input.clientId}) ON CONFLICT(client_id) DO NOTHING RETURNING *`, tx)
       if (!rows.length) {
         const [existing] = await query<ChatMessage>(sql`SELECT * FROM messages WHERE client_id=${input.clientId} AND author_id=${user.id} AND event_id=${id} AND domain=${input.domain}`, tx)
@@ -95,7 +160,7 @@ export function registerEvents(app: FastifyInstance, context: RouteContext) {
     const id=eventId(request),domain=domainSchema.parse((request.body as {domain?:string})?.domain),userId=request.resoUser!.id
     await db.transaction(async tx=>{
       await query(sql`SELECT id FROM events WHERE id=${id} FOR UPDATE`,tx)
-      await (domain==='private'?requireEventOwner:requireRoomParticipant)(id,userId,tx)
+      await (domain==='private'?requireEventOwner:requireOpenRoom)(id,userId,tx)
       await enqueue(id,domain,userId,tx,supportsMethodOffers(request.headers['x-reso-features']))
     });return{queued:true}
   })

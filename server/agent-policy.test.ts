@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {initialSessionState,turnAssessmentSchema,decideRoute,validateTurnEvidence,applySessionFeedback} from './agent-policy'
+import {initialSessionState,turnAssessmentSchema,decideRoute,validateTurnEvidence,applySessionFeedback,recognizeExpressionDraft} from './agent-policy'
 import type {TurnAssessment} from './agent-policy'
 
 const turn=(overrides:Partial<TurnAssessment>={}):TurnAssessment=>({schema_version:1,intent:'explore',refusal_target:null,emotion:'委屈',emotion_intensity:'moderate',event_clarity:'clear',readiness:'exploring',risk:'none',risk_reason:'',method_candidate:null,user_requested_method:false,record_request:null,understanding_confirmed:false,confirmation_evidence_id:null,third_party_motive_uncertain:true,room_intervention_needed:true,confidence:0.85,evidence:[{message_id:'10',quote:'妈妈说就差几分'}],hypotheses:[],uncertainty:'不知道妈妈的意思',...overrides})
@@ -140,4 +140,18 @@ test('an explicit method preview needs no confirmation of a model hypothesis, wh
     assert.equal(decideRoute(blocked,initial(),'private','10').decision.may_offer_method,null)
   }
   assert.equal(decideRoute(preview,initialSessionState('room:event-1'),'room','10').decision.may_offer_method,null)
+})
+
+
+test('an explicit expression-draft request is recognized without changing safety or inventing missing facts',()=>{
+  const original=turn({intent:'advice'})
+  const recognized=recognizeExpressionDraft(original,'妈妈没听我说完。帮我写下我的表达。')
+  assert.equal(recognized.record_request,'nvc')
+  assert.equal(decideRoute(recognized,initial(),'private','10').decision.may_prepare_record,true)
+  const unclear=recognizeExpressionDraft(turn({event_clarity:'unknown'}),'帮我写下我的表达。')
+  assert.equal(decideRoute(unclear,initial(),'private','10').decision.may_prepare_record,false)
+  assert.equal(recognizeExpressionDraft(original,'这句怎么说？'),original)
+  assert.equal(recognizeExpressionDraft(original,'她说“帮我写下我的表达”。'),original)
+  const risky=turn({risk:'uncertain'})
+  assert.equal(recognizeExpressionDraft(risky,'帮我写下我的表达。'),risky)
 })

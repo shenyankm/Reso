@@ -41,6 +41,6 @@ export function useDraft(userId:string,eventId:string,kind:string,values:Record<
   }
   function saved(nextRevision=revision){remove(key);setState({key,values:current.values,revision:nextRevision,dirty:false,persistent:true})}
   function reset(){remove(key);setState({key,...initial,dirty:false,persistent:true})}
-  function rebase(){const next={...current,revision};memory.set(key,next);try{storage()?.setItem(key,JSON.stringify(next))}catch{}setState(next)}
+  function rebase(nextRevision=revision){const next={...current,revision:nextRevision};memory.set(key,next);try{storage()?.setItem(key,JSON.stringify(next))}catch{}setState(next)}
   return{...current,update,saved,reset,rebase}
 }

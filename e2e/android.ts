@@ -184,7 +184,12 @@ export class Android {
     const roots=nodes.find(n=>/Show roots|显示根目录/.test(n['content-desc']))
     if(roots){await this.nativeTap(n=>n['content-desc']===roots['content-desc']);await this.nativeTap(n=>/^(Downloads|下载)$/.test(n.text)&&n['resource-id']==='android:id/title')}
     await this.nativeTap(n=>n.class==='android.widget.EditText')
-    this.shell('shell','input','keycombination','113','29');this.shell('shell','input','text',filename);this.shell('shell','input','keyevent','4')
+    const field=(await this.nativeTree()).find(n=>n.class==='android.widget.EditText'&&n.focused==='true')
+    assert.ok(field,'Android filename field must have focus before typing')
+    this.shell('shell','input','keyevent','KEYCODE_MOVE_END')
+    if(field.text.length)this.shell('shell','input','keyevent',...Array(field.text.length).fill('KEYCODE_DEL'))
+    this.shell('shell','input','text',filename)
+    assert.ok((await this.nativeTree()).some(n=>n.class==='android.widget.EditText'&&n.text===filename),'Check the filename before confirming Android save')
     await this.nativeTap(n=>/^(SAVE|Save|保存)$/.test(n.text)&&n.enabled==='true')
     await this.text('记录已导出')
     this.surfaceFocused=false

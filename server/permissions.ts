@@ -17,6 +17,11 @@ export function createPermissions(database: Database) {
   }
   const requireEventOwner = (eventId: string, userId: string, executor: Executor = db) => requireEvent(eventId, userId, 'private', executor)
   const requireRoomParticipant = (eventId: string, userId: string, executor: Executor = db) => requireEvent(eventId, userId, 'room', executor)
+  async function requireOpenRoom(eventId: string, userId: string, executor: Executor) {
+    const event = await requireRoomParticipant(eventId, userId, executor)
+    if (event.room_closed_at) throw new HttpError(409, '会谈已结束，只能查看已有记录')
+    return event
+  }
   async function requireActiveCounselor(userId: string, executor: Executor = db) {
     // A transaction keeps this lock until the state change commits, serializing disable/revoke.
     const [consultant] = await query<{ id: string }>(sql`SELECT id FROM consultants WHERE user_id=${userId} AND active FOR SHARE`, executor)
@@ -26,5 +31,5 @@ export function createPermissions(database: Database) {
   async function hasSession(sessionId: string, userId: string) {
     return (await query(sql`SELECT 1 FROM "session" WHERE id=${sessionId} AND "userId"=${userId} AND "expiresAt">now()`)).length > 0
   }
-  return { hasEventAccess, requireEventOwner, requireRoomParticipant, requireActiveCounselor, hasSession }
+  return { hasEventAccess, requireEventOwner, requireRoomParticipant, requireOpenRoom, requireActiveCounselor, hasSession }
 }

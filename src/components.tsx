@@ -1,14 +1,18 @@
 import {useEffect,useRef,useId} from 'react'
 import type {ReactNode} from 'react'
-import {CircleCheck,X} from 'lucide-react'
+import {ChevronDown,CircleCheck,X} from 'lucide-react'
 import type {Message} from './demo'
 
 export function Button({ children, onClick, secondary = false, disabled = false, className = '' }: { children: ReactNode; onClick?: () => void; secondary?: boolean; disabled?: boolean; className?: string }) {
   return <button type="button" className={`${secondary ? 'button secondary' : 'button primary'} ${className}`} onClick={onClick} disabled={disabled}>{children}</button>
 }
 
-export function Bubble({ role = 'reso', children }: { role?: Message['role']; children: ReactNode }) {
-  return <div className={`bubble ${role}`}>{role === 'mom' && <span className="speaker">妈妈</span>}{children}</div>
+export function DisclosureSummary({children}:{children:ReactNode}) {
+  return <summary className="disclosure-toggle">{children}<ChevronDown aria-hidden="true"/></summary>
+}
+
+export function Bubble({ role = 'reso', children, speaker = '妈妈' }: { role?: Message['role']; children: ReactNode; speaker?: string }) {
+  return <div className={`bubble ${role}`}>{role === 'mom' && <span className="speaker">{speaker}</span>}{children}</div>
 }
 
 export function Dialog({ title, children, onClose, busy = false }: { title: string; children: ReactNode; onClose: () => void; busy?: boolean }) {

@@ -1,3 +1,4 @@
+import {findConsultants} from './consultants'
 import {z} from 'zod'
 import {sql} from './db'
 import type {Database} from './db'
@@ -46,8 +47,8 @@ export function createAgentTools(database:Database,job:ReplyJob,version:number):
       const {readUnderstandings}=await import('./understandings')
       result=(await readUnderstandings(database,job.eventId,job.domain)).slice(0,8).map(r=>({...r,source_author_name:r.source_author_name.slice(0,80),confirmations:r.confirmations.slice(0,8),confirmation_count:r.confirmations.length,content:r.content.slice(0,300),truncated:r.content.length>300||r.confirmations.length>8}))
     }else if(request.name==='find_support'){
-      const rows=await query<{id:string;name:string;specialties:string[];approach:string;price:string;test_only:boolean}>(sql`SELECT id,name,specialties,approach,price,test_only FROM consultants WHERE active AND verified_at IS NOT NULL AND NOT test_only ORDER BY name LIMIT 100`)
-      result=rows.map(r=>({...r,name:r.name.slice(0,80),approach:r.approach.slice(0,300),price:r.price.slice(0,80),specialties:r.specialties.slice(0,8).map(s=>s.slice(0,80)),matches:r.specialties.filter(s=>request.need.includes(s))})).sort((a,b)=>b.matches.length-a.matches.length).slice(0,3)
+      const rows=await findConsultants(database,request.need.trim())
+      result=rows.map(r=>({id:r.id,name:r.name.slice(0,80),approach:r.approach.slice(0,300),price:r.price.slice(0,80),specialties:r.specialties.slice(0,8).map(s=>s.slice(0,80)),matches:r.matches,test_only:r.test_only}))
     }else if(request.name==='retrieve_methods')result=methodCards[request.kind]
     else result=request.kind==='followup'?followupGuide:methodCards[request.kind]
     return{request,result,source_ids,user_source_ids}

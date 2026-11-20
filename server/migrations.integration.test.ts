@@ -42,7 +42,9 @@ test('legacy upgrade preserves data, rolls back failures, serializes concurrent 
     assert.equal((await pool.query('SELECT count(*) FROM snapshots')).rows[0].count,'2')
     await pool.query("UPDATE snapshots SET content='shared v1' WHERE user_id='member'")
     await Promise.all([database.migrate(),database.migrate()])
-    assert.equal((await pool.query('SELECT count(*) FROM schema_migrations')).rows[0].count,'7')
+    assert.equal((await pool.query('SELECT count(*) FROM schema_migrations')).rows[0].count,'9')
+    assert.equal((await pool.query('SELECT room_closed_at FROM events WHERE id=$1',[eventId])).rows[0].room_closed_at,null)
+    assert.equal((await pool.query('SELECT count(*) FROM contact_categories')).rows[0].count,'0')
     assert.equal((await pool.query("SELECT to_regclass('snapshots') AS name")).rows[0].name,null)
     assert.equal((await pool.query('SELECT count(*) FROM share_snapshots')).rows[0].count,'1')
     const grants=(await pool.query('SELECT recipient_id,revoked_at,source FROM share_grants ORDER BY recipient_id')).rows

@@ -1,10 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { sql } from '../db'
+import { findConsultants } from '../consultants'
 import { HttpError, uuid, eventId } from '../http'
 import type { RouteContext } from '../context'
 import { randomUUID } from 'node:crypto'
-import type { Application, Consultant } from '../../shared/types'
+import type { Application } from '../../shared/types'
 
 type ApplicationRow=Application&{applicant_id:string;counselor_id:string}
 
@@ -21,11 +22,12 @@ export function registerSupport(app: FastifyInstance, context: RouteContext) {
   }
   app.get('/api/consultants',async request=>{
     const {need}=z.object({need:z.string().trim().max(80).default('')}).parse(request.query)
-    const rows=await query<Consultant>(sql`SELECT id,name,approach,qualifications,price,test_only,specialties,service_modes,availability,verified_at FROM consultants WHERE active AND (test_only OR verified_at IS NOT NULL) ORDER BY test_only,name LIMIT 100`)
-    return rows.map(c=>{
-      const matches=c.specialties.filter(topic=>need&&need.includes(topic))
-      return {...c,score:matches.length,recommendation_reason:c.test_only?'本地测试资料，仅用于验证申请流程':matches.length?`与你选择的方向相关：${matches.join('、')}`:'未找到明确匹配的方向，请先核对擅长领域和服务方式'}
-    }).sort((a,b)=>b.score-a.score).slice(0,3)
+    const rows=await findConsultants(database,need)
+    return rows.map(({matches,...consultant})=>({
+      ...consultant,
+      recommendation_reason:matches.length?`与你选择的方向相关：${matches.join('、')}`
+        :'可以先看看老师的擅长领域和服务方式。',
+    }))
   })
   app.post('/api/events/:id/applications',async request=>{
     const id=eventId(request),userId=request.resoUser!.id
@@ -34,11 +36,12 @@ export function registerSupport(app: FastifyInstance, context: RouteContext) {
       await query(sql`SELECT id FROM events WHERE id=${id} FOR UPDATE`,tx)
       const event=await requireEventOwner(id,userId,tx)
       if(input.shareSummary&&(input.version!==event.summary_version||!event.summary.trim()))throw new HttpError(409,'请重新核对要分享的摘要')
-      if(!(await query(sql`SELECT 1 FROM consultants WHERE id=${input.consultantId} AND active AND (test_only OR verified_at IS NOT NULL) FOR SHARE`,tx)).length)throw new HttpError(409,'该服务当前不可申请')
+      const [consultant]=await query<{user_id:string}>(sql`SELECT user_id FROM consultants WHERE id=${input.consultantId} AND active AND verified_at IS NOT NULL AND NOT test_only FOR SHARE`,tx)
+      if(!consultant)throw new HttpError(409,'该服务当前不可申请')
       const [created]=await query<Application>(sql`INSERT INTO applications(id,client_id,event_id,applicant_id,consultant_id,shared_summary) VALUES(${randomUUID()},${input.clientId},${id},${userId},${input.consultantId},${input.shareSummary?event.summary:null}) ON CONFLICT(client_id) DO NOTHING RETURNING *`,tx)
       if(!created)throw new HttpError(409,'该申请已提交，请查看当前状态')
-      return created
-    });await notify(id,'private');return result
+      return {created,counselorId:consultant.user_id}
+    });await notify(id,'private',result.counselorId);return result.created
   })
   app.get('/api/counselor/applications',async request=>{
     await requireActiveCounselor(request.resoUser!.id)
@@ -57,8 +60,8 @@ export function registerSupport(app: FastifyInstance, context: RouteContext) {
       await query(sql`UPDATE applications SET status=${input.status},proposed_at=${input.status==='proposed'?input.scheduledAt!:null},schedule_version=schedule_version+1,rejection_reason=${input.status==='rejected'?input.reason:''},shared_summary=${input.status==='cancelled'?null:a.shared_summary} WHERE id=${id}`,tx)
       if(input.status==='cancelled')await query(sql`UPDATE note_shares SET revoked_at=now() WHERE application_id=${id} AND revoked_at IS NULL`,tx)
       await revision(a.event_id,userId,'application_status',{id,status:input.status,scheduledAt:input.scheduledAt,reason:input.reason},tx)
-      return a.event_id
-    });await notify(event,'private');return{saved:true}
+      return {id:a.event_id,counselorId:a.counselor_id}
+    });await notify(event.id,'private',event.counselorId);return{saved:true}
   })
   app.post('/api/applications/:id/appointment-response',async request=>{
     const id=uuid.parse((request.params as {id:string}).id),userId=request.resoUser!.id
@@ -68,16 +71,25 @@ export function registerSupport(app: FastifyInstance, context: RouteContext) {
       if(a.applicant_id!==userId)throw new HttpError(403,'只有申请人能确认时间')
       if(a.status!=='proposed'||a.schedule_version!==input.version)throw new HttpError(409,'时间提议已更新，请重新核对')
       if(input.accepted&&(!a.proposed_at||new Date(a.proposed_at)<=new Date()))throw new HttpError(409,'提议时间已经过期，请重新协商')
-      if(input.accepted)await requireActiveCounselor(a.counselor_id,tx)
+      if(input.accepted){
+        const [active]=await query(sql`SELECT id FROM consultants WHERE id=${a.consultant_id} AND active FOR UPDATE`,tx)
+        if(!active)throw new HttpError(403,'该咨询师当前无法接受预约')
+        const [conflict]=await query(sql`SELECT 1 FROM applications WHERE consultant_id=${a.consultant_id}
+          AND id<>${id} AND status IN ('scheduled','proposed') AND scheduled_at=${a.proposed_at}`,tx)
+        if(conflict)throw new HttpError(409,'这个时间已被预约，请让老师提出新的时间')
+      }
       const status=input.accepted?'scheduled':a.scheduled_at?'scheduled':'accepted'
       await query(sql`UPDATE applications SET status=${status},scheduled_at=${input.accepted?a.proposed_at:a.scheduled_at},proposed_at=NULL,schedule_version=schedule_version+1 WHERE id=${id}`,tx)
-      await revision(a.event_id,userId,'appointment_response',{id,...input},tx);return a.event_id
-    });await notify(event,'private');return{saved:true}
+      await revision(a.event_id,userId,'appointment_response',{id,...input},tx)
+      return {id:a.event_id,counselorId:a.counselor_id}
+    });await notify(event.id,'private',event.counselorId);return{saved:true}
   })
   app.delete('/api/applications/:id/share',async request=>{
     const id=uuid.parse((request.params as {id:string}).id),userId=request.resoUser!.id
-    const rows=await query(sql`UPDATE applications SET shared_summary=NULL WHERE id=${id} AND applicant_id=${userId} RETURNING id`)
-    if(!rows.length)throw new HttpError(404,'申请不存在或无权操作')
+    const [updated]=await query<{event_id:string;counselor_id:string}>(sql`UPDATE applications a SET shared_summary=NULL FROM consultants c
+      WHERE a.id=${id} AND a.applicant_id=${userId} AND c.id=a.consultant_id RETURNING a.event_id,c.user_id AS counselor_id`)
+    if(!updated)throw new HttpError(404,'申请不存在或无权操作')
+    await notify(updated.event_id,'private',updated.counselor_id)
     return{revoked:true}
   })
   app.put('/api/applications/:id/note',async request=>{
@@ -99,6 +111,7 @@ export function registerSupport(app: FastifyInstance, context: RouteContext) {
       const a=await application(id,tx)
       await query(sql`SELECT id FROM events WHERE id=${a.event_id} FOR UPDATE`,tx)
       if(a.applicant_id!==userId)throw new HttpError(403,'只有申请人能分享纪要')
+      await context.requireOpenRoom(a.event_id,userId,tx)
       const [note]=await query<{content:string;version:number}>(sql`SELECT content,version FROM consultation_notes WHERE application_id=${id} AND client_visible FOR SHARE`,tx)
       if(!note||note.version!==input.version)throw new HttpError(409,'请核对当前可见的纪要版本')
       if(!(await query(sql`SELECT 1 FROM members WHERE event_id=${a.event_id} AND user_id=${input.recipientId} AND active`,tx)).length)throw new HttpError(403,'只能向当前房间成员分享')

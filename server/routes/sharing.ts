@@ -10,7 +10,7 @@ import { shareSnapshot, replaceShareGrant } from '../shares'
 const hash = (token: string) => createHash('sha256').update(token).digest('hex')
 
 export function registerSharing(app: FastifyInstance, context: RouteContext) {
-  const { database, requireEventOwner, requireRoomParticipant, revision, notify } = context
+  const { database, requireEventOwner, requireRoomParticipant, requireOpenRoom, revision, notify } = context
   const { query, db } = database
   async function readInvitation(value:unknown){
     const token=z.string().regex(/^[A-Za-z0-9_-]{43}$/).parse(value)
@@ -19,6 +19,21 @@ export function registerSharing(app: FastifyInstance, context: RouteContext) {
     if(invite.status!=='pending'||new Date(invite.expires_at)<new Date())throw new HttpError(410,'邀请已使用、取消或过期')
     return invite
   }
+  app.post('/api/events/:id/close-room',async request=>{
+    const id=eventId(request),userId=request.resoUser!.id
+    const changed=await db.transaction(async tx=>{
+      await query(sql`SELECT id FROM events WHERE id=${id} FOR UPDATE`,tx)
+      const event=await requireEventOwner(id,userId,tx)
+      if(event.room_closed_at)return false
+      if(!event.room_title)throw new HttpError(409,'还没有可以结束的会谈')
+      await query(sql`UPDATE events SET room_closed_at=now(),room_version=room_version+1,room_updated_at=now() WHERE id=${id}`,tx)
+      await query(sql`UPDATE invites SET status='cancelled' WHERE event_id=${id} AND status='pending'`,tx)
+      await revision(id,userId,'room_closed',{},tx)
+      return true
+    })
+    if(changed)await notify(id,'room')
+    return {closed:true}
+  })
   app.post('/api/events/:id/invites',async request=>{
     const id=eventId(request),event=await requireEventOwner(id,request.resoUser!.id)
     const input=z.object({shareSummary:z.boolean(),version:z.number().int().nonnegative(),clientId:uuid}).parse(request.body)
@@ -28,6 +43,7 @@ export function registerSharing(app: FastifyInstance, context: RouteContext) {
     const rows=await db.transaction(async tx=>{
       const [fresh]=await query<EventRecord>(sql`SELECT * FROM events WHERE id=${id} FOR UPDATE`,tx)
       if(!fresh||fresh.summary_version!==input.version)throw new HttpError(409,'记录已更新，请重新核对后邀请')
+      if(fresh.room_closed_at)throw new HttpError(409,'会谈已结束，无法发出新邀请')
       await assertSafetyAllowsSharing(database,id,tx)
       await query(sql`UPDATE events SET room_title=CASE WHEN room_title='' THEN title ELSE room_title END WHERE id=${id}`,tx)
       const snapshotId = input.shareSummary ? await shareSnapshot(database, fresh, tx) : null
@@ -50,10 +66,18 @@ export function registerSharing(app: FastifyInstance, context: RouteContext) {
     const token=z.string().regex(/^[A-Za-z0-9_-]{43}$/).parse((request.params as {token:string}).token),userId=request.resoUser!.id
     const {accept}=z.object({accept:z.boolean()}).parse(request.body)
     const result=await db.transaction(async tx=>{
-      const [invite]=await query<{id:string;event_id:string;snapshot_id:string|null;owner_id:string;status:string;recipient_id:string|null;expires_at:string}>(sql`SELECT i.*,e.owner_id FROM invites i JOIN events e ON e.id=i.event_id WHERE i.token_hash=${hash(token)} FOR UPDATE OF i,e`,tx)
+      const tokenHash=hash(token)
+      const [match]=await query<{event_id:string}>(sql`SELECT event_id FROM invites WHERE token_hash=${tokenHash}`,tx)
+      if(!match)throw new HttpError(404,'邀请不存在')
+      await query(sql`SELECT id FROM events WHERE id=${match.event_id} FOR UPDATE`,tx)
+      const [invite]=await query<{id:string;event_id:string;snapshot_id:string|null;owner_id:string;status:string;recipient_id:string|null;expires_at:string}>(sql`SELECT i.*,e.owner_id FROM invites i JOIN events e ON e.id=i.event_id WHERE i.token_hash=${tokenHash} FOR UPDATE OF i`,tx)
       if(!invite)throw new HttpError(404,'邀请不存在')
       if(invite.owner_id===userId)throw new HttpError(409,'请让受邀者用另一个账号打开邀请')
-      if(invite.status==='accepted'&&invite.recipient_id===userId&&accept)return{eventId:invite.event_id}
+      if(invite.status==='accepted'&&invite.recipient_id===userId&&accept){
+        const [member]=await query(sql`SELECT 1 FROM members WHERE event_id=${invite.event_id} AND user_id=${userId} AND active`,tx)
+        if(!member)throw new HttpError(410,'这次邀请已失效，需要重新邀请')
+        return{eventId:invite.event_id}
+      }
       if(invite.status!=='pending'||new Date(invite.expires_at)<new Date())throw new HttpError(410,'邀请已使用、取消或过期')
       if(accept)await assertSafetyAllowsSharing(database,invite.event_id,tx)
       await query(sql`UPDATE invites SET status=${accept?'accepted':'declined'},recipient_id=${userId} WHERE id=${invite.id}`,tx)
@@ -73,11 +97,21 @@ export function registerSharing(app: FastifyInstance, context: RouteContext) {
   })
   app.delete('/api/events/:id/members/:userId',async request=>{
     const id=eventId(request),actor=request.resoUser!.id,target=z.string().min(1).max(100).parse((request.params as {userId:string}).userId)
-    await requireRoomParticipant(id,actor)
-    const [event]=await query<EventRecord>(sql`SELECT * FROM events WHERE id=${id}`)
-    if(actor!==event.owner_id&&actor!==target)throw new HttpError(403,'只能管理自己的加入状态')
-    await db.transaction(async tx=>{await query(sql`SELECT id FROM events WHERE id=${id} FOR UPDATE`,tx);await query(sql`UPDATE members SET active=false WHERE event_id=${id} AND user_id=${target}`,tx);await replaceShareGrant(database,id,target,null,actor,tx);await query(sql`UPDATE note_shares SET revoked_at=now() WHERE recipient_id=${target} AND revoked_at IS NULL AND application_id IN (SELECT id FROM applications WHERE event_id=${id})`,tx);await query(sql`UPDATE events SET room_version=room_version+1,room_updated_at=now() WHERE id=${id}`,tx);await revision(id,actor,'member_removed',{recipient:target},tx)})
-    await notify(id,'room');return{revoked:true}
+    const removed=await db.transaction(async tx=>{
+      await query(sql`SELECT id FROM events WHERE id=${id} FOR UPDATE`,tx)
+      const event=await requireRoomParticipant(id,actor,tx)
+      if(actor!==event.owner_id&&actor!==target)throw new HttpError(403,'只能管理自己的加入状态')
+      const [member]=await query(sql`UPDATE members SET active=false WHERE event_id=${id} AND user_id=${target} AND active RETURNING user_id`,tx)
+      if(!member)return false
+      if(actor===event.owner_id)await query(sql`UPDATE invites SET status='cancelled' WHERE event_id=${id} AND status='pending'`,tx)
+      await replaceShareGrant(database,id,target,null,actor,tx)
+      await query(sql`UPDATE note_shares SET revoked_at=now() WHERE recipient_id=${target} AND revoked_at IS NULL AND application_id IN (SELECT id FROM applications WHERE event_id=${id})`,tx)
+      await query(sql`UPDATE events SET room_version=room_version+1,room_updated_at=now() WHERE id=${id}`,tx)
+      await revision(id,actor,'member_removed',{recipient:target},tx)
+      return true
+    })
+    if(removed)await notify(id,'room',target)
+    return{revoked:true}
   })
   app.put('/api/events/:id/shares/:userId', async request => {
     const id=eventId(request),actor=request.resoUser!.id,target=text(100).parse((request.params as {userId:string}).userId)
@@ -86,6 +120,7 @@ export function registerSharing(app: FastifyInstance, context: RouteContext) {
     await db.transaction(async tx => {
       const [event]=await query<EventRecord>(sql`SELECT * FROM events WHERE id=${id} FOR UPDATE`,tx)
       if(!event||event.summary_version!==input.version)throw new HttpError(409,'摘要已更新，请重新核对后分享')
+      if(event.room_closed_at)throw new HttpError(409,'会谈已结束，仍可撤回已分享的摘要')
       await assertSafetyAllowsSharing(database,id,tx)
       if(!event.summary.trim())throw new HttpError(400,'请先填写并确认要分享的摘要')
       if(!(await query(sql`SELECT 1 FROM members WHERE event_id=${id} AND user_id=${target} AND active`,tx)).length)throw new HttpError(409,'对方尚未加入或已经退出房间')
@@ -114,7 +149,7 @@ export function registerSharing(app: FastifyInstance, context: RouteContext) {
     const input=z.object({text:text(2000),confirmed:z.boolean(),version:z.number().int().nonnegative()}).parse(request.body)
     await db.transaction(async tx=>{
       await query(sql`SELECT id FROM events WHERE id=${id} FOR UPDATE`,tx)
-      await requireRoomParticipant(id,userId,tx)
+      await requireOpenRoom(id,userId,tx)
       await query(sql`INSERT INTO perspectives(event_id,user_id,text) VALUES(${id},${userId},'') ON CONFLICT DO NOTHING`,tx)
       const rows=await query(sql`UPDATE perspectives SET text=${input.text},confirmed=${input.confirmed},version=version+1 WHERE event_id=${id} AND user_id=${userId} AND version=${input.version} RETURNING user_id`,tx)
       if(!rows.length)throw new HttpError(409,'你的表达已有新版本，请刷新后核对')

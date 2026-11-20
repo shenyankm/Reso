@@ -21,7 +21,10 @@ export function registerAccounts(app: FastifyInstance, context: RouteContext) {
   app.get('/api/me/applications',async request=>query(sql`SELECT a.id,a.event_id,a.status,c.name AS consultant_name,c.test_only,e.title AS event_title FROM applications a JOIN events e ON e.id=a.event_id JOIN consultants c ON c.id=a.consultant_id WHERE a.applicant_id=${request.resoUser!.id} AND e.owner_id=${request.resoUser!.id} ORDER BY CASE a.status WHEN 'scheduled' THEN 0 WHEN 'proposed' THEN 1 WHEN 'accepted' THEN 2 WHEN 'pending' THEN 3 ELSE 4 END,a.created_at DESC,a.id LIMIT 20`))
   app.get('/api/me/records', async request => {
     const userId=request.resoUser!.id
-    const {offset}=z.object({offset:z.coerce.number().int().min(0).max(1_000_000).default(0)}).parse(request.query)
+    const {offset,kind}=z.object({
+      offset:z.coerce.number().int().min(0).max(1_000_000).default(0),
+      kind:z.literal('story').optional(),
+    }).parse(request.query)
     const rows=await query<SavedRecord>(sql`
       WITH mine AS (SELECT id,title FROM events WHERE owner_id=${userId}), records AS (
         SELECT x.event_id::text AS id,x.event_id,e.title AS event_title,'story' AS kind,x.updated_at
@@ -36,7 +39,8 @@ export function registerAccounts(app: FastifyInstance, context: RouteContext) {
         UNION ALL
         SELECT f.id::text,f.event_id,e.title,'followup',f.created_at
         FROM followups f JOIN mine e ON e.id=f.event_id WHERE f.user_id=${userId}
-      ) SELECT * FROM records ORDER BY updated_at DESC,kind,id LIMIT 21 OFFSET ${offset}
+      ) SELECT * FROM records WHERE (${!kind} OR kind='story')
+        ORDER BY updated_at DESC,kind,id LIMIT 21 OFFSET ${offset}
     `)
     return { records:rows.slice(0,20),nextOffset:rows.length>20?offset+20:null }
   })

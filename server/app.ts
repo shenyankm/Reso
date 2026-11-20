@@ -20,6 +20,7 @@ import { registerTransport } from './routes/transport'
 import { registerUnderstandings } from './understandings'
 import {registerAgentActions} from './agent-actions'
 import { registerFollowups } from './routes/followups'
+import { registerTopics } from './routes/topics'
 import { createAuth } from './auth'
 import { verifyMigrations } from './migrations'
 import { assertRuntimeRole } from './database-access'
@@ -59,7 +60,7 @@ export async function createApp(options: { databaseUrl?: string; secret?: string
   let listener:Awaited<ReturnType<typeof listenForUpdates>>
   try { listener=await listenForUpdates(database,updates) }
   catch(error){await queue?.stop();await pool.end();throw error}
-  const notify = (eventId: string, domain: Domain) => publishUpdate(database,eventId,domain)
+  const notify = (eventId: string, domain: Domain, refreshUserId?: string) => publishUpdate(database,eventId,domain,refreshUserId)
   async function enqueue(eventId:string,domain:Domain,actorId:string,executor:Parameters<typeof database.query>[1]=database.db,methodOffers=false){
     if(!queue)return
     const queued=await queue.send('agent.reply',{eventId,domain,actorId,methodOffers},{expireInSeconds:180,db:{executeSql:async(statement,values=[])=>({
@@ -106,6 +107,7 @@ export async function createApp(options: { databaseUrl?: string; secret?: string
   registerTransport(app, context, updates)
   registerUnderstandings(app,context)
   registerFollowups(app,context)
+  registerTopics(app,context)
   registerAgentActions(app,context)
   app.addHook('onClose',async()=>{updates.removeAllListeners();try{await listener.close()}finally{try{await queue?.stop()}finally{await pool.end()}}})
   return{app,database,auth,queue,notify}

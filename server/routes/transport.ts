@@ -24,17 +24,25 @@ export function registerTransport(app: FastifyInstance, context: RouteContext, u
     const sessionId=request.resoSessionId!
     reply.hijack();reply.raw.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive','X-Accel-Buffering':'no'})
     reply.raw.write('event: ready\ndata: {}\n\n')
-    let pending:EventNotification|null=null,checking=false,heartbeatBusy=false
+    let pending:EventNotification|null=null,checking=false,heartbeatBusy=false,targetedRefresh=false
     const open=()=>!reply.raw.destroyed&&!reply.raw.writableEnded
-    const handler=(event:EventNotification)=>{pending=event;void flush()}
+    const handler=(event:EventNotification)=>{
+      if(event.refreshUserId===userId)targetedRefresh=true
+      pending=event
+      void flush()
+    }
     async function flush(){
       if(checking)return
       checking=true
       try{
-        while(pending&&open()){
+        while((pending||targetedRefresh)&&open()){
           const event=pending;pending=null
+          const refreshRecipient=targetedRefresh;targetedRefresh=false
           if(!await hasSession(sessionId,userId)){reply.raw.end();return}
-          if(await hasEventAccess(event.eventId,userId,event.domain)&&open()&&!reply.raw.write(`event: update\ndata: ${json({eventId:event.eventId})}\n\n`)){reply.raw.end();return}
+          if(refreshRecipient){
+            // A direct refresh carries no event metadata. The next API request checks permissions.
+            if(open()&&!reply.raw.write('event: update\ndata: {}\n\n')){reply.raw.end();return}
+          }else if(event&&await hasEventAccess(event.eventId,userId,event.domain)&&open()&&!reply.raw.write(`event: update\ndata: ${json({eventId:event.eventId})}\n\n`)){reply.raw.end();return}
         }
       }catch{reply.raw.end()}finally{checking=false}
     }

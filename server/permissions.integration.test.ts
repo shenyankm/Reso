@@ -31,8 +31,10 @@ test('disabled counselors, revoked members and invalid sessions lose access on H
     const eventId=(await call('POST','/api/events',owner.cookie,{title:'权限回归测试'})).json().id
     const invitation=(await call('POST',`/api/events/${eventId}/invites`,owner.cookie,{shareSummary:false,version:0,clientId:randomUUID()})).json()
     assert.equal((await call('POST',`/api/invites/${invitation.token}/respond`,member.cookie,{accept:true})).statusCode,200)
+    const pending=(await call('POST',`/api/events/${eventId}/invites`,owner.cookie,{shareSummary:false,version:0,clientId:randomUUID()})).json()
+    assert.equal(typeof pending.token,'string')
     const consultantId=randomUUID()
-    await fixture.fixtures.pool.query("INSERT INTO consultants(id,user_id,name,approach,qualifications,price) VALUES($1,$2,'test','test','test','test')",[consultantId,counselor.id])
+    await fixture.fixtures.pool.query("INSERT INTO consultants(id,user_id,name,approach,qualifications,price,test_only,verified_at) VALUES($1,$2,'test','test','test','test',false,now())",[consultantId,counselor.id])
     assert.equal((await call('GET','/api/me',counselor.cookie)).json().role,'counselor')
     const application=(await call('POST',`/api/events/${eventId}/applications`,owner.cookie,{consultantId,shareSummary:false,version:0,clientId:randomUUID()})).json()
     await fixture.fixtures.pool.query('UPDATE consultants SET active=false WHERE id=$1',[consultantId])
@@ -72,7 +74,7 @@ test('disabled counselors, revoked members and invalid sessions lose access on H
       assert.match((await next())!,/event: ready/)
       return next
     }
-    const ownerNext=await stream(owner.cookie),memberNext=await stream(member.cookie)
+    const ownerNext=await stream(owner.cookie),memberNext=await stream(member.cookie),outsiderNext=await stream(counselor.cookie)
     const before=(await call('GET',`/api/events/${eventId}?domain=room`,member.cookie)).json().event.updated_at
     assert.equal((await call('POST',`/api/events/${eventId}/messages`,owner.cookie,{content:'private only',domain:'private',clientId:randomUUID()})).statusCode,200)
     assert.match((await ownerNext())!,/event: update/)
@@ -83,6 +85,10 @@ test('disabled counselors, revoked members and invalid sessions lose access on H
     assert.match((await memberNext())!,/event: update/);assert.match((await ownerNext())!,/event: update/)
     assert.equal((await call('DELETE',`/api/events/${eventId}/members/${member.id}`,owner.cookie)).statusCode,200)
     assert.match((await ownerNext())!,/event: update/)
+    assert.equal(await memberNext(),'event: update\ndata: {}')
+    await assert.rejects(outsiderNext(200),/SSE_TIMEOUT/)
+    assert.equal((await call('POST',`/api/invites/${invitation.token}/respond`,member.cookie,{accept:true})).statusCode,410)
+    assert.equal((await call('POST',`/api/invites/${pending.token}/respond`,member.cookie,{accept:true})).statusCode,410)
     await notify(eventId,'room')
     assert.match((await ownerNext())!,/event: update/)
     await assert.rejects(memberNext(200),/SSE_TIMEOUT/)

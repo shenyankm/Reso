@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ArrowRight, Bot, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, HandHeart, LocateFixed, MessageSquare, Send, ShieldCheck, Sparkles, UserRound, UsersRound } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, HandHeart, LocateFixed, MessageSquare, Send, ShieldCheck, Sparkles, UserRound, UsersRound } from 'lucide-react'
 import { Bubble, Button, Card, Dialog } from '../components'
+import { PrimaryNavigation } from '../PrimaryNavigation'
 import { ProgressiveReply } from '../ProgressiveReply'
 import { examName, RoadshowCard, storyText } from './Cards'
 import { MotherRoom } from './MotherRoom'
@@ -450,12 +451,8 @@ function RoadshowSession({ restart, standalone, join }: { restart: () => void; s
     </form>}
     </div>
     </div>
-    {standalone && <nav className="roadshow-app-nav" aria-label="主导航">
-      <button type="button" aria-current={!result ? 'page' : undefined} onClick={resumeChat}><span><Bot aria-hidden="true"/></span>Reso</button>
-      <button type="button" aria-current={result ? 'page' : undefined} onClick={() => { if (!result) openResult('events') }}>
-        <span><UsersRound aria-hidden="true"/></span>我的关系
-      </button>
-    </nav>}
+    {standalone && <PrimaryNavigation className="roadshow-app-nav" relationships={!!result}
+      onReso={resumeChat} onRelationships={() => { if (!result) openResult('events') }}/>}
     </>}
     {welcomeSheet && <Dialog title={welcomeSheet} onClose={() => setWelcomeSheet(undefined)}>
       <p className="dialog-description">{welcomeInfo[welcomeSheet]}</p>

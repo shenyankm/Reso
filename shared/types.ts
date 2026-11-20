@@ -1,12 +1,13 @@
 import type {AgentAction} from './agent'
-import type {ReplyPhase} from './reply'
+import type {DecisionSummary,ReplyPhase} from './reply'
+import type {ContactCategory} from './relationships'
 export type Domain = 'private' | 'room'
 export type User = { id: string; name: string; email: string }
 export type InvitationPreview = { title:string;has_summary:boolean;inviter_name?:string;member_names?:string[] }
 export type SavedRecord = { id:string;event_id:string;event_title:string;kind:'story'|'nvc'|'roleplay'|'followup';updated_at:string }
 export type SavedRecordPage = { records:SavedRecord[];nextOffset:number|null }
-export type EventRecord = { id: string; owner_id: string; title: string; room_title: string; room_updated_at: string; summary: string; summary_version: number; private_version: number; room_version: number; initial_summary: string; created_at: string; updated_at: string; is_owner?: boolean }
-export type ChatMessage = { id: string; event_id: string; author_id: string | null; author_name: string; domain: Domain; role: 'user' | 'assistant'; content: string; status: 'complete' | 'error'; client_id: string | null; in_reply_to: string | null; created_at: string; card_type: 'safety' | null;understanding_kind?:'summary'|'inference'|null;reply_summary?:string|null;agent_actions?:AgentAction[] }
+export type EventRecord = { id: string; owner_id: string; title: string; room_title: string; room_updated_at: string; room_closed_at?: string | null; summary: string; summary_version: number; private_version: number; room_version: number; initial_summary: string; created_at: string; updated_at: string; is_owner?: boolean }
+export type ChatMessage = { id: string; event_id: string; author_id: string | null; author_name: string; domain: Domain; role: 'user' | 'assistant'; content: string; status: 'complete' | 'error'; client_id: string | null; in_reply_to: string | null; created_at: string; card_type: 'safety' | null;understanding_kind?:'summary'|'inference'|null;reply_summary?:string|null;decision_summary?:DecisionSummary|null;agent_actions?:AgentAction[] }
 export type Exercise = { act: number; paused: boolean; notes: Record<string, string>; story: string; saved: boolean; version: number; practice_notes: Record<string,Record<string,string>> }
 export type Questionnaire = { version: string; answers: (number | null)[]; scores: Record<string, number> | null; discovery: string; state: 'draft' | 'unconfirmed' | 'accepted' | 'rejected'; confirmed_summary: string; revision: number }
 export type Member = { user_id: string; name: string; shared: boolean }
@@ -19,5 +20,7 @@ export type EventDetail = { event: EventRecord; messages: ChatMessage[]; hasMore
 
 export type MessagePage=Pick<EventDetail,'messages'|'hasMore'>
 
-export type PersonConnection={user_id:string;name:string;event_id:string;event_title:string;last_interaction_at?:string}
+export type PersonConnection={user_id:string;name:string;event_id:string;event_title:string;last_interaction_at?:string;category?:ContactCategory|null;room_closed_at?:string|null}
 export type SupportOverview=Pick<Application,'id'|'event_id'|'consultant_name'|'status'>&{event_title:string;test_only:boolean}
+
+export type RoomTopic = { id:string; question:string; answers:{user_id:string;name:string;answer:string}[] }

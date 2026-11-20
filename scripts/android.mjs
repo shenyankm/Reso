@@ -25,10 +25,15 @@ function prepareResources(){
   cpSync('src-tauri/icons/android','src-tauri/gen/android/app/src/main/res',{recursive:true})
   const path='src-tauri/gen/android/app/src/main/AndroidManifest.xml'
   let manifest=readFileSync(path,'utf8')
-  for(const permission of ['RECORD_AUDIO','MODIFY_AUDIO_SETTINGS']){
+  for(const permission of ['RECORD_AUDIO','CAMERA','MODIFY_AUDIO_SETTINGS','POST_NOTIFICATIONS','RECEIVE_BOOT_COMPLETED']){
     if(!manifest.slice(0,manifest.indexOf('<application')).includes(`android.permission.${permission}`))manifest=manifest.replace(/<manifest\b[^>]*>/,opening=>`${opening}\n    <uses-permission android:name="android.permission.${permission}" />`)
   }
+  if(!manifest.includes('android:name="android.hardware.camera.any"'))manifest=manifest.replace(/<application\b/, '<uses-feature android:name="android.hardware.camera.any" android:required="false" />\n    <application')
   manifest=manifest.replace(/<activity\b[^>]*>/,opening=>opening.includes('android:windowSoftInputMode=')?opening:opening.replace('<activity','<activity android:windowSoftInputMode="adjustResize"'))
+  if(!manifest.includes('android:name=".FollowupReminders"'))manifest=manifest.replace('</application>',`  <receiver android:name=".FollowupReminders" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
+        </receiver>
+    </application>`)
   writeFileSync(path,manifest)
 }
 

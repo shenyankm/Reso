@@ -66,7 +66,7 @@ export async function startRuntime(artifacts:string,overrideModel?:Model,realAge
       if(!response.ok)throw Error(`Fixture signup: ${response.status}`)
       const data=await response.json();return accounts[who]={id:data.user.id,email,password,cookie:response.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ')}
     }
-    async function expert(){const user=await account('expert'),id=randomUUID();await fixture.fixtures.pool.query("INSERT INTO consultants(id,user_id,name,approach,qualifications,price,test_only,specialties,service_modes) VALUES($1,$2,$3,'本地测试','仅用于 E2E 验收','不收费',true,ARRAY['亲子沟通'],ARRAY['测试流程'])",[id,user.id,names.expert]);return id}
+    async function expert(){const user=await account('expert'),id=randomUUID();await fixture.fixtures.pool.query("INSERT INTO consultants(id,user_id,name,approach,qualifications,price,test_only,specialties,service_modes,verified_at) VALUES($1,$2,$3,'本地测试','仅用于 E2E 验收','不收费',false,ARRAY['亲子沟通'],ARRAY['测试流程'],now())",[id,user.id,names.expert]);return id}
     return{fixture,service,webPort,accounts,request,account,expert,control,errors,close}
   }catch(error){await close();throw error}
 }

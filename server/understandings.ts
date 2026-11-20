@@ -19,9 +19,9 @@ export async function readUnderstandings(database:Database,id:string,domain:Doma
 }
 
 export function registerUnderstandings(app:FastifyInstance,context:RouteContext){
-  const {database,requireEventOwner,requireRoomParticipant,revision,notify}=context
+  const {database,requireEventOwner,requireOpenRoom,revision,notify}=context
   const {query,db}=database
-  const access=(domain:Domain)=>(domain==='private'?requireEventOwner:requireRoomParticipant)
+  const access=(domain:Domain)=>(domain==='private'?requireEventOwner:requireOpenRoom)
   async function touch(id:string,domain:Domain,tx:Parameters<typeof query>[1]){
     if(domain==='private')await query(sql`UPDATE events SET private_version=private_version+1 WHERE id=${id}`,tx)
     else await query(sql`UPDATE events SET room_version=room_version+1,room_updated_at=now() WHERE id=${id}`,tx)

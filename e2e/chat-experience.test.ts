@@ -164,7 +164,7 @@ test('Android enlarged text and night mode keep the actual visible WebView reada
     await f.ui.click('.message-wrap:last-of-type .message-reasoning > summary')
     assert.equal(await f.ui.eval('document.documentElement.scrollWidth>innerWidth'),false)
     await f.ui.shot('large-text-night')
-    const tree=await f.ui.nativeTree();assert.ok(tree.some(n=>n.text?.includes('思考摘要')),'The screenshot and DOM must refer to the same visible native surface')
+    const tree=await f.ui.nativeTree();assert.ok(tree.some(n=>n.text?.includes('决策摘要')),'The screenshot and DOM must refer to the same visible native surface')
     await writeFile(join(f.artifacts,'results.json'),JSON.stringify({font_scale:1.3,night_mode:true,...result},null,2),{mode:0o600})
   }finally{await close(f);console.log('Large-text App evidence:',f.artifacts)}
 })

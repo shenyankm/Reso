@@ -9,6 +9,12 @@ export function registerFollowups(app:FastifyInstance,context:RouteContext){
   const {query,db}=database
   // shortcut: global history shows 100 entries; add pagination when growth history exceeds this.
   app.get('/api/followups',async request=>query(sql`SELECT f.*,e.title AS event_title FROM followups f JOIN events e ON e.id=f.event_id WHERE f.user_id=${request.resoUser!.id} AND e.owner_id=${request.resoUser!.id} ORDER BY f.created_at DESC LIMIT 100`))
+  app.get('/api/followups/reminders',async request=>query(sql`
+    SELECT f.id,(extract(epoch FROM f.review_at)*1000)::double precision AS at FROM followups f JOIN events e ON e.id=f.event_id
+    WHERE f.user_id=${request.resoUser!.id} AND e.owner_id=f.user_id AND f.reviewed_at IS NULL
+      AND f.review_at>=now()-interval '1 day'
+    ORDER BY f.review_at,f.id LIMIT 100
+  `))
   app.post('/api/events/:id/followups',async request=>{
     const id=eventId(request),userId=request.resoUser!.id
     const input=z.object({id:uuid,reflection:z.string().trim().min(1).max(2000),nextStep:z.string().trim().max(1000),reviewAt:z.string().datetime().nullable()}).parse(request.body)
