@@ -9,6 +9,8 @@ openwook.cloud {
 	}
 	handle {
 		root * /opt/reso/current/dist
+		@appEntry path / /index.html
+		header @appEntry Cache-Control "no-cache"
 		try_files {path} /index.html
 		file_server
 	}
